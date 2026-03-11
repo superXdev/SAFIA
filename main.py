@@ -21,7 +21,7 @@ llm = AsyncOpenAI(
 )
 
 MODEL = "openai/gpt-oss-120b"
-SYSTEM_PROMPT = "Kamu adalah SAFIA, asisten AI yang ramah dan helpful di Telegram. Selalu jawab dalam Bahasa Indonesia yang fasih dan natural. Jawab dengan ringkas dan jelas."
+SYSTEM_PROMPT = "Kamu adalah SAFIA, asisten AI yang ramah dan helpful di Telegram. Selalu jawab dalam Bahasa Indonesia yang fasih dan natural. Jawab dengan ringkas dan jelas. Format respons selalu dalam Markdown (bold, italic, list, code, dll) agar mudah dibaca di Telegram."
 
 chat_histories: dict[int, list[dict]] = {}
 
@@ -35,13 +35,19 @@ def get_history(chat_id: int) -> list[dict]:
 @dp.message(F.text == "/start")
 async def handle_start(message: Message):
     chat_histories.pop(message.chat.id, None)
-    await message.answer("Halo! Aku SAFIA, asisten AI kamu. Kirim pesan apa saja dan aku akan membantu kamu.")
+    await message.answer(
+        "Halo! Aku *SAFIA*, asisten AI kamu. Kirim pesan apa saja dan aku akan membantu kamu.",
+        parse_mode=ParseMode.MARKDOWN,
+    )
 
 
 @dp.message(F.text == "/reset")
 async def handle_reset(message: Message):
     chat_histories.pop(message.chat.id, None)
-    await message.answer("Percakapan telah direset.")
+    await message.answer(
+        "Percakapan telah direset.",
+        parse_mode=ParseMode.MARKDOWN,
+    )
 
 
 @dp.message(F.text)
@@ -49,7 +55,7 @@ async def handle_message(message: Message):
     history = get_history(message.chat.id)
     history.append({"role": "user", "content": message.text})
 
-    typing = await message.answer("Thinking...")
+    typing = await message.answer("Thinking...", parse_mode=ParseMode.MARKDOWN)
 
     try:
         response = await llm.chat.completions.create(
@@ -57,17 +63,21 @@ async def handle_message(message: Message):
             messages=history,
         )
         reply = response.choices[0].message.content or "..."
+        is_error = False
     except Exception as e:
         logging.exception("LLM request failed")
-        reply = f"Sorry, something went wrong: {e}"
+        reply = f"Maaf, terjadi kesalahan: {e}"
+        is_error = True
 
     history.append({"role": "assistant", "content": reply})
 
     if len(history) > 41:
         history[:] = [history[0]] + history[-40:]
 
-    await typing.delete()
-    await message.answer(reply)
+    await typing.edit_text(
+        reply,
+        parse_mode=ParseMode.MARKDOWN if not is_error else None,
+    )
 
 
 async def main():
