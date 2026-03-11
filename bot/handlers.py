@@ -28,7 +28,7 @@ async def handle_message(message: Message) -> None:
     history.append({"role": "user", "content": message.text or ""})
 
     typing = await message.answer("Thinking...", parse_mode=ParseMode.MARKDOWN)
-    reply = await llm_chat(history)
+    reply = await llm_chat(history, message.chat.id)
     history.append({"role": "assistant", "content": reply})
     await save_history(message.chat.id, history)
 
