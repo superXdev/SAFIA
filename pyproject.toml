@@ -8,4 +8,8 @@ dependencies = [
     "aiogram>=3.26.0",
     "openai>=2.24.0",
     "python-dotenv>=1.2.2",
+    "redis>=5.0.0",
 ]
+
+[project.optional-dependencies]
+dev = ["watchfiles>=0.24.0"]
