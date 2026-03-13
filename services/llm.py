@@ -5,7 +5,7 @@ import logging
 from openai import AsyncOpenAI
 
 from config import LLM_API_KEY, LLM_BASE_URL, MODEL
-from services.llm_tools import TOOLS, run_tool
+from services.tools import TOOLS, run_tool
 
 _client: AsyncOpenAI | None = None
 
@@ -19,7 +19,7 @@ def get_client() -> AsyncOpenAI:
     return _client
 
 
-async def chat(messages: list[dict], chat_id: int) -> str:
+async def chat(messages: list[dict], user_id: int) -> str:
     """Send messages to LLM; run tools if requested; return final assistant reply."""
     try:
         client = get_client()
@@ -40,7 +40,7 @@ async def chat(messages: list[dict], chat_id: int) -> str:
             for tc in msg.tool_calls:
                 name = tc.function.name
                 args = json.loads(tc.function.arguments or "{}")
-                result = await run_tool(name, args, chat_id)
+                result = await run_tool(name, args, user_id)
                 current.append(
                     {
                         "role": "tool",

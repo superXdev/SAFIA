@@ -4,8 +4,8 @@ from aiogram.types import Message
 from aiogram.enums import ParseMode
 
 from services.llm import chat as llm_chat
-from services.storage import clear_history, get_history, save_history
-from services.db import get_or_create_user
+from services.chat_history import clear_history, get_history, save_history
+from services.database import get_or_create_user
 
 
 async def handle_start(message: Message) -> None:
@@ -48,7 +48,7 @@ async def handle_message(message: Message) -> None:
     history.append({"role": "user", "content": message.text or ""})
 
     typing = await message.answer("Thinking...", parse_mode=ParseMode.MARKDOWN)
-    reply = await llm_chat(history, message.chat.id)
+    reply = await llm_chat(history, message.from_user.id)
     history.append({"role": "assistant", "content": reply})
     await save_history(message.chat.id, history)
 

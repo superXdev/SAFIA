@@ -10,8 +10,8 @@ from aiogram import Bot, Dispatcher
 
 from config import TELEGRAM_BOT_TOKEN
 from bot.handlers import register_handlers
-from services.storage import close_redis
-from services.db import close_db, init_db
+from services.chat_history import close_redis
+from services.database import close_db, init_db
 
 logging.basicConfig(level=logging.INFO)
 
