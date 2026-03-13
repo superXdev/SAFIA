@@ -1,9 +1,12 @@
 """Telegram message handlers."""
+import tempfile
+from pathlib import Path
+
 from aiogram import F, Dispatcher
 from aiogram.types import Message
 from aiogram.enums import ParseMode
 
-from services.llm import chat as llm_chat
+from services.llm import chat as llm_chat, transcribe
 from services.chat_history import clear_history, get_history, save_history
 from services.database import get_or_create_user
 
@@ -47,7 +50,38 @@ async def handle_message(message: Message) -> None:
     history = await get_history(message.chat.id)
     history.append({"role": "user", "content": message.text or ""})
 
-    typing = await message.answer("Thinking...", parse_mode=ParseMode.MARKDOWN)
+    typing = await message.answer("Berpikir...", parse_mode=ParseMode.MARKDOWN)
+    reply = await llm_chat(history, message.from_user.id)
+    history.append({"role": "assistant", "content": reply})
+    await save_history(message.chat.id, history)
+
+    await typing.edit_text(reply, parse_mode=ParseMode.MARKDOWN)
+
+
+async def handle_voice(message: Message) -> None:
+    typing = await message.answer("Mendengarkan...", parse_mode=ParseMode.MARKDOWN)
+
+    file = await message.bot.get_file(message.voice.file_id)
+    with tempfile.NamedTemporaryFile(suffix=".ogg", delete=False) as tmp:
+        tmp_path = Path(tmp.name)
+        await message.bot.download_file(file.file_path, tmp_path)
+
+    try:
+        text = await transcribe(tmp_path)
+    finally:
+        tmp_path.unlink(missing_ok=True)
+
+    if not text:
+        await typing.edit_text(
+            "Maaf, tidak bisa mengenali suara. Coba lagi.",
+            parse_mode=ParseMode.MARKDOWN,
+        )
+        return
+
+    history = await get_history(message.chat.id)
+    history.append({"role": "user", "content": text})
+
+    await typing.edit_text("Berpikir...", parse_mode=ParseMode.MARKDOWN)
     reply = await llm_chat(history, message.from_user.id)
     history.append({"role": "assistant", "content": reply})
     await save_history(message.chat.id, history)
@@ -58,4 +92,5 @@ async def handle_message(message: Message) -> None:
 def register_handlers(dp: Dispatcher) -> None:
     dp.message.register(handle_start, F.text == "/start")
     dp.message.register(handle_reset, F.text == "/reset")
+    dp.message.register(handle_voice, F.voice)
     dp.message.register(handle_message, F.text)
