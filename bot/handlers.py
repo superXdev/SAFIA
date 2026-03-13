@@ -9,6 +9,8 @@ from aiogram.enums import ParseMode
 from services.llm import chat as llm_chat, transcribe
 from services.chat_history import clear_history, get_history, save_history
 from services.database import get_or_create_user
+from services.document_vision import extract_document_text, parse_final_amount
+from config import OPENROUTER_API_KEY
 
 
 async def handle_start(message: Message) -> None:
@@ -89,8 +91,57 @@ async def handle_voice(message: Message) -> None:
     await typing.edit_text(reply, parse_mode=ParseMode.MARKDOWN)
 
 
+async def handle_photo(message: Message) -> None:
+    if not OPENROUTER_API_KEY:
+        await message.answer(
+            "Fitur foto dokumen belum diaktifkan. Hubungi admin.",
+            parse_mode=ParseMode.MARKDOWN,
+        )
+        return
+
+    typing = await message.answer("Memproses dokumen...", parse_mode=ParseMode.MARKDOWN)
+
+    # Telegram sends multiple sizes; use the largest
+    photo = message.photo[-1]
+    file = await message.bot.get_file(photo.file_id)
+    suffix = ".jpg" if file.file_path and "png" not in file.file_path else ".png"
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+        tmp_path = Path(tmp.name)
+        await message.bot.download_file(file.file_path, tmp_path)
+
+    try:
+        extracted = await extract_document_text(tmp_path)
+    finally:
+        tmp_path.unlink(missing_ok=True)
+
+    if not extracted or extracted.lower().startswith("not a document"):
+        await typing.edit_text(
+            "Tidak bisa membaca dokumen dari foto ini. Kirim foto invoice, slip gaji, atau catatan yang jelas.",
+            parse_mode=ParseMode.MARKDOWN,
+        )
+        return
+
+    # Parse calculated final amount so we record the correct number (net salary, receipt total after discounts, etc.)
+    final_amount = parse_final_amount(extracted)
+    amount_hint = ""
+    if final_amount is not None and final_amount > 0:
+        amount_hint = f"\n\n**Gunakan angka ini saat mencatat (jumlah final yang sudah dihitung): Rp {final_amount:,.0f}**. Jangan pakai subtotal atau total kotor."
+    # Use extracted text as user context and get SAFIA's reply
+    user_context = f"[Isi dokumen dari foto yang dikirim user]\n{extracted}{amount_hint}"
+    history = await get_history(message.chat.id)
+    history.append({"role": "user", "content": user_context})
+
+    await typing.edit_text("Berpikir...", parse_mode=ParseMode.MARKDOWN)
+    reply = await llm_chat(history, message.from_user.id if message.from_user else 0)
+    history.append({"role": "assistant", "content": reply})
+    await save_history(message.chat.id, history)
+
+    await typing.edit_text(reply, parse_mode=ParseMode.MARKDOWN)
+
+
 def register_handlers(dp: Dispatcher) -> None:
     dp.message.register(handle_start, F.text == "/start")
     dp.message.register(handle_reset, F.text == "/reset")
     dp.message.register(handle_voice, F.voice)
+    dp.message.register(handle_photo, F.photo)
     dp.message.register(handle_message, F.text)

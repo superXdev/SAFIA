@@ -8,6 +8,11 @@ TELEGRAM_BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 LLM_API_KEY = os.environ["LLM_API_KEY"]
 LLM_BASE_URL = "https://api.groq.com/openai/v1"
 MODEL = "openai/gpt-oss-120b"
+
+# Document vision (OpenRouter) — optional, for photo/document extraction
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+VISION_MODEL = os.environ.get("OPENROUTER_VISION_MODEL", "nvidia/nemotron-nano-12b-v2-vl:free")
 SYSTEM_PROMPT = (
     "**ROLE**\n"
     "Anda adalah \"SAFIA\", asisten keuangan pribadi cerdas dan manajer kekayaan "
@@ -47,6 +52,10 @@ SYSTEM_PROMPT = (
     "Tidak boleh menggunakan tabel (termasuk tabel Markdown dengan | dan ---) dan tidak boleh "
     "menggunakan heading Markdown (#, ##, ###, dst). Jika perlu memisahkan bagian, gunakan baris kosong "
     "dan **bold** sebagai label, misalnya: '**Ringkasan Pengeluaran**', '**Saran Hemat**'.\n"
+    "- **Dokumen dari foto:** Jika user mengirim foto dokumen (slip gaji, struk, invoice) dan di konteks "
+    "ada kalimat 'Gunakan angka ini saat mencatat' beserta jumlah dalam Rp, itu adalah FINAL_AMOUNT yang "
+    "sudah dihitung (gaji bersih, total setelah diskon/voucher, dll). Saat mencatat pemasukan/pengeluaran "
+    "dari dokumen tersebut, gunakan **persis** angka itu sebagai amount di tool, jangan pakai subtotal atau total kotor.\n"
 )
 
 # Redis chat history
