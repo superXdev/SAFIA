@@ -9,6 +9,9 @@ dependencies = [
     "openai>=2.24.0",
     "python-dotenv>=1.2.2",
     "redis>=5.0.0",
+    "requests>=2.31.0",
+    "sqlalchemy>=2.0.0",
+    "asyncpg>=0.29.0",
 ]
 
 [project.optional-dependencies]

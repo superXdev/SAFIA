@@ -23,3 +23,7 @@ REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 CHAT_KEY_PREFIX = "safia:chat:"
 MAX_CHAT_MESSAGES = 10  # 5 conversations (5 user + 5 assistant)
 HISTORY_TTL_SECONDS = 2 * 60 * 60  # 2 hours
+
+# Database (PostgreSQL via async SQLAlchemy)
+# Example: postgresql+asyncpg://user:password@localhost:5432/safia
+DATABASE_URL = os.environ["DATABASE_URL"]

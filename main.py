@@ -11,6 +11,7 @@ from aiogram import Bot, Dispatcher
 from config import TELEGRAM_BOT_TOKEN
 from bot.handlers import register_handlers
 from services.storage import close_redis
+from services.db import close_db, init_db
 
 logging.basicConfig(level=logging.INFO)
 
@@ -22,9 +23,11 @@ async def main() -> None:
 
     logging.info("Starting SAFIA bot...")
     try:
+        await init_db()
         await dp.start_polling(bot)
     finally:
         await close_redis()
+        await close_db()
 
 
 if __name__ == "__main__":

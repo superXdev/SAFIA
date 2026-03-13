@@ -5,10 +5,21 @@ from aiogram.enums import ParseMode
 
 from services.llm import chat as llm_chat
 from services.storage import clear_history, get_history, save_history
+from services.db import get_or_create_user
 
 
 async def handle_start(message: Message) -> None:
     await clear_history(message.chat.id)
+
+    user = message.from_user
+    if user:
+        await get_or_create_user(
+            telegram_id=user.id,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            username=user.username,
+        )
+
     await message.answer(
         "Halo! Aku *SAFIA*, asisten AI kamu. Kirim pesan apa saja dan aku akan membantu kamu.",
         parse_mode=ParseMode.MARKDOWN,
