@@ -40,12 +40,14 @@ async def chat(messages: list[dict], chat_id: int) -> str:
             for tc in msg.tool_calls:
                 name = tc.function.name
                 args = json.loads(tc.function.arguments or "{}")
-                result = run_tool(name, args, chat_id)
-                current.append({
-                    "role": "tool",
-                    "tool_call_id": tc.id,
-                    "content": result,
-                })
+                result = await run_tool(name, args, chat_id)
+                current.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tc.id,
+                        "content": result,
+                    }
+                )
 
         return "Maaf, terlalu banyak langkah. Coba lagi."
     except Exception:

@@ -1,7 +1,11 @@
 """LLM tool definitions and execution for expense/income recording."""
 import logging
 
-from utils.records import expense_record, income_record, get_records
+from services.db import (
+    get_records_for_chat,
+    save_expense_record,
+    save_income_record,
+)
 
 TOOLS = [
     {
@@ -79,23 +83,23 @@ def _format_records_list(records: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def run_tool(name: str, arguments: dict, chat_id: int) -> str:
+async def run_tool(name: str, arguments: dict, chat_id: int) -> str:
     """Execute a tool by name and return result string for the LLM."""
     try:
         if name == "expense_record":
             amount = float(arguments.get("amount", 0))
             description = (arguments.get("description") or "").strip()
             category = (arguments.get("category") or "").strip()
-            expense_record(chat_id, amount, description, category)
+            await save_expense_record(chat_id, amount, description, category)
             return _format_record_confirm(amount, "expense", category, description)
         if name == "income_record":
             amount = float(arguments.get("amount", 0))
             description = (arguments.get("description") or "").strip()
             category = (arguments.get("category") or "").strip()
-            income_record(chat_id, amount, description, category)
+            await save_income_record(chat_id, amount, description, category)
             return _format_record_confirm(amount, "income", category, description)
         if name == "get_records":
-            records = get_records(chat_id)
+            records = await get_records_for_chat(chat_id)
             if not records:
                 return "Belum ada catatan pemasukan/pengeluaran."
             return _format_records_list(records)

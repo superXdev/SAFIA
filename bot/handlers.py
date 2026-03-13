@@ -20,10 +20,19 @@ async def handle_start(message: Message) -> None:
             username=user.username,
         )
 
-    await message.answer(
-        "Halo! Aku *SAFIA*, asisten AI kamu. Kirim pesan apa saja dan aku akan membantu kamu.",
-        parse_mode=ParseMode.MARKDOWN,
+    first_name = user.first_name if user and user.first_name else None
+    name_part = f" {first_name}" if first_name else ""
+
+    text = (
+        f"Halo{name_part}! Aku *SAFIA*, asisten keuangan pribadi dan manajer kekayaan kamu. \n\n"
+        "- Bantu catat pemasukan/pengeluaran harian.\n"
+        "- Bantu catat dan rebalance aset (saham, emas, crypto, dll).\n"
+        "- Bantu review kebiasaan belanja biar nggak boncos.\n"
+        "- Jelasin konsep keuangan/investasi pakai referensi regulasi & berita yang kredibel.\n\n"
+        "Tinggal ceritakan kondisi keuangan atau pertanyaan kamu, aku bantu pilihin langkah yang paling masuk akal. 🙂"
     )
+
+    await message.answer(text, parse_mode=ParseMode.MARKDOWN)
 
 
 async def handle_reset(message: Message) -> None:
