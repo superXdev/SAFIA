@@ -55,3 +55,24 @@ class Debt(Base):
         server_default=func.now(),
     )
 
+
+class Asset(Base):
+    __tablename__ = "assets"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    asset_type: Mapped[str] = mapped_column(String(32))  # stock, crypto, gold, reksadana, etc.
+    name: Mapped[str] = mapped_column(String(128))  # symbol or label, e.g. BTC, AAPL, Emas Antam
+    quantity: Mapped[float] = mapped_column(Float)
+    unit_value: Mapped[float] = mapped_column(Float)  # value per unit in IDR
+    notes: Mapped[str] = mapped_column(String(255), default="", nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+

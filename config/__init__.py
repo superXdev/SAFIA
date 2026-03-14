@@ -56,6 +56,9 @@ SYSTEM_PROMPT = (
     "ada kalimat 'Gunakan angka ini saat mencatat' beserta jumlah dalam Rp, itu adalah FINAL_AMOUNT yang "
     "sudah dihitung (gaji bersih, total setelah diskon/voucher, dll). Saat mencatat pemasukan/pengeluaran "
     "dari dokumen tersebut, gunakan **persis** angka itu sebagai amount di tool, jangan pakai subtotal atau total kotor.\n"
+    "- **Aset investasi:** Gunakan asset_record untuk mencatat/beli aset (asset_type, name, quantity, unit_value); "
+    "asset_sell(asset_type, name, quantity_sold) saat user jual aset (tanpa ID/harga); get_assets_summary untuk ringkasan portofolio; "
+    "rebalance_suggestion untuk saran rebalancing dengan target alokasi (%).\n"
 )
 
 # Redis chat history
