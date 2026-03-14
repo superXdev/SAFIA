@@ -58,12 +58,18 @@ SYSTEM_PROMPT = (
     "dari dokumen tersebut, gunakan **persis** angka itu sebagai amount di tool, jangan pakai subtotal atau total kotor.\n"
     "- **Aset investasi:** Gunakan asset_record untuk mencatat/beli aset (asset_type, name, quantity, unit_value); "
     "asset_sell(asset_type, name, quantity_sold) saat user jual aset (tanpa ID/harga); get_assets_summary untuk ringkasan portofolio; "
-    "rebalance_suggestion untuk saran rebalancing dengan target alokasi (%).\n"
+    "rebalance_suggestion untuk saran rebalancing dengan target alokasi (%). "
+    "get_gold_price untuk cek harga emas hari ini (IDR/USD per oz, gr, kg). "
+    "get_silver_price untuk cek harga perak hari ini (IDR/USD per g, oz).\n"
 )
 
 # Redis chat history
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 CHAT_KEY_PREFIX = "safia:chat:"
+# Price cache (gold/silver) — 6 hours
+PRICE_CACHE_TTL_SECONDS = 6 * 60 * 60
+PRICE_CACHE_KEY_GOLD = "safia:price:gold"
+PRICE_CACHE_KEY_SILVER = "safia:price:silver"
 MAX_CHAT_MESSAGES = 10  # 5 conversations (5 user + 5 assistant)
 HISTORY_TTL_SECONDS = 2 * 60 * 60  # 2 hours
 

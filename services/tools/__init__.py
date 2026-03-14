@@ -4,14 +4,18 @@ from typing import Any
 
 from services.tools.assets import HANDLERS as ASSET_HANDLERS, SCHEMAS as ASSET_SCHEMAS
 from services.tools.debts import HANDLERS as DEBT_HANDLERS, SCHEMAS as DEBT_SCHEMAS
+from services.tools.gold import HANDLERS as GOLD_HANDLERS, SCHEMAS as GOLD_SCHEMAS
 from services.tools.records import HANDLERS as RECORD_HANDLERS, SCHEMAS as RECORD_SCHEMAS
+from services.tools.silver import HANDLERS as SILVER_HANDLERS, SCHEMAS as SILVER_SCHEMAS
 
-TOOLS = RECORD_SCHEMAS + DEBT_SCHEMAS + ASSET_SCHEMAS
+TOOLS = RECORD_SCHEMAS + DEBT_SCHEMAS + ASSET_SCHEMAS + GOLD_SCHEMAS + SILVER_SCHEMAS
 
 _HANDLERS: dict[str, Any] = {
     **RECORD_HANDLERS,
     **DEBT_HANDLERS,
     **ASSET_HANDLERS,
+    **GOLD_HANDLERS,
+    **SILVER_HANDLERS,
 }
 
 
