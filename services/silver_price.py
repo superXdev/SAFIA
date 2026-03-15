@@ -1,4 +1,4 @@
-"""Fetch silver (perak) price in IDR from harga-emas.org/perak (OneGramParekTable)."""
+"""Fetch silver (perak) price in IDR from bullion-rates.com (IDR spot price table)."""
 import re
 import logging
 from typing import Any
@@ -8,7 +8,7 @@ import requests
 from config import PRICE_CACHE_KEY_SILVER
 from services.price_cache import get_cached, set_cached
 
-SILVER_URL = "https://harga-emas.org/perak"
+SILVER_URL = "https://id.bullion-rates.com/silver/IDR/spot-price.htm"
 
 BROWSER_HEADERS = {
     "User-Agent": (
@@ -19,25 +19,16 @@ BROWSER_HEADERS = {
     "Accept-Language": "id,en;q=0.9",
 }
 
-# Unit block: <span class="...units...">LABEL</span><br>PRICE<br><span ...>CHANGE</span>
-_UNIT_BLOCK_RE = re.compile(
-    r'OneGramParekTable_units[^>]*>([^<]+)</span>\s*<br>\s*([^<]+)\s*<br>\s*<span[^>]*>([^<]*)</span>',
-    re.IGNORECASE | re.DOTALL,
+# Rows: <td class="rate">43.895</td><td class="Unit">Gram</td> (price in IDR, dot = thousand sep)
+_RATE_UNIT_RE = re.compile(
+    r'<td\s+class="rate">\s*([\d.,]+)\s*</td>\s*<td\s+class="Unit">\s*(Gram|Ounce|Kilo)\s*</td>',
+    re.IGNORECASE,
 )
 
 
-def _parse_idr(s: str) -> float:
-    """Parse IDR string like Rp43.918 or Rp1.365.349 -> float."""
-    s = (s or "").strip().replace("Rp", "").replace(" ", "").replace(".", "").replace(",", ".")
-    try:
-        return float(s) if s else 0.0
-    except ValueError:
-        return 0.0
-
-
-def _parse_usd(s: str) -> float:
-    """Parse USD string like $2.59 or $80.61 -> float."""
-    s = (s or "").strip().replace("$", "").replace(" ", "").replace(",", ".")
+def _parse_idr_number(s: str) -> float:
+    """Parse IDR number: dot as thousand separator (43.895 -> 43895, 1.365.288 -> 1365288)."""
+    s = (s or "").strip().replace(" ", "").replace(".", "").replace(",", ".")
     try:
         return float(s) if s else 0.0
     except ValueError:
@@ -46,58 +37,45 @@ def _parse_usd(s: str) -> float:
 
 def parse_silver_table(html: str) -> dict[str, Any]:
     """
-    Parse silver price from OneGramParekTable. Returns dict with:
-    idr_per_gram, idr_per_oz, usd_per_gram, usd_per_oz, kurs (optional),
-    and change strings for each.
+    Parse silver spot table from bullion-rates.com. Returns dict with:
+    idr_per_gram, idr_per_oz, idr_per_kilo (and legacy usd keys as 0).
     """
     result = {
         "idr_per_gram": 0.0,
         "idr_per_oz": 0.0,
+        "idr_per_kilo": 0.0,
         "usd_per_gram": 0.0,
         "usd_per_oz": 0.0,
         "idr_per_gram_change": "",
         "idr_per_oz_change": "",
-        "usd_per_gram_change": "",
-        "usd_per_oz_change": "",
-        "kurs": 0.0,
-        "kurs_change": "",
+        "idr_per_kilo_change": "",
     }
-    for m in _UNIT_BLOCK_RE.finditer(html):
-        label = (m.group(1) or "").strip().upper()
-        price_str = (m.group(2) or "").strip()
-        change_str = (m.group(3) or "").strip()
-        if "IDR/G" in label:
-            result["idr_per_gram"] = _parse_idr(price_str)
-            result["idr_per_gram_change"] = change_str
-        elif "IDR/OZ" in label:
-            result["idr_per_oz"] = _parse_idr(price_str)
-            result["idr_per_oz_change"] = change_str
-        elif "USD/G" in label:
-            result["usd_per_gram"] = _parse_usd(price_str)
-            result["usd_per_gram_change"] = change_str
-        elif "USD/OZ" in label:
-            result["usd_per_oz"] = _parse_usd(price_str)
-            result["usd_per_oz_change"] = change_str
-        elif "KURS" in label:
-            result["kurs"] = _parse_idr(price_str)
-            result["kurs_change"] = change_str
+    for m in _RATE_UNIT_RE.finditer(html):
+        price_str = (m.group(1) or "").strip()
+        unit = (m.group(2) or "").strip().lower()
+        val = _parse_idr_number(price_str)
+        if unit == "gram":
+            result["idr_per_gram"] = val
+        elif unit == "ounce":
+            result["idr_per_oz"] = val
+        elif unit == "kilo":
+            result["idr_per_kilo"] = val
     return result
 
 
 def fetch_silver_price_idr() -> dict[str, Any]:
-    """Fetch silver price table from harga-emas.org/perak. Returns parsed dict. Cached in Redis for 6 hours."""
+    """Fetch silver price from bullion-rates.com (IDR per gram, oz, kilo). Cached in Redis for 6 hours."""
     cached = get_cached(PRICE_CACHE_KEY_SILVER)
     if cached is not None:
         return cached
     try:
         resp = requests.get(SILVER_URL, headers=BROWSER_HEADERS, timeout=15)
         resp.raise_for_status()
-        print(resp.status_code)
         html = resp.text
     except Exception:
         logging.exception("Silver price fetch failed")
-        return parse_silver_table("")  # return empty structure
+        return parse_silver_table("")
     data = parse_silver_table(html)
-    if data and (data.get("idr_per_gram") or data.get("usd_per_gram")):
+    if data and (data.get("idr_per_gram") or data.get("idr_per_oz")):
         set_cached(PRICE_CACHE_KEY_SILVER, data)
     return data

@@ -1,6 +1,7 @@
 """LLM client and chat completion with tool calling."""
 import json
 import logging
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from openai import AsyncOpenAI
@@ -11,6 +12,9 @@ from services.tools import TOOLS, run_tool
 _client: AsyncOpenAI | None = None
 
 MAX_TOOL_ROUNDS = 5
+
+# WIB = UTC+7
+WIB = timezone(timedelta(hours=7))
 
 
 def get_client() -> AsyncOpenAI:
@@ -41,6 +45,11 @@ async def chat(messages: list[dict], user_id: int) -> str:
     try:
         client = get_client()
         current = list(messages)
+        # Inject current date/time into system message so the model knows "today" (once per turn)
+        if current and current[0].get("role") == "system":
+            now = datetime.now(WIB)
+            time_line = f"\n\n**Tanggal dan waktu saat ini (untuk konteks):** {now.strftime('%d %B %Y, %H:%M')} WIB."
+            current[0] = {"role": "system", "content": (current[0].get("content") or "") + time_line}
 
         for _ in range(MAX_TOOL_ROUNDS):
             response = await client.chat.completions.create(

@@ -12,8 +12,8 @@ SCHEMAS = [
         "function": {
             "name": "get_silver_price",
             "description": (
-                "Ambil harga perak (silver) hari ini dalam IDR dan USD dari harga-emas.org. "
-                "Mengembalikan harga per gram (g) dan per ounce (oz). "
+                "Ambil harga perak (silver) spot hari ini dalam IDR dari bullion-rates.com. "
+                "Mengembalikan harga per gram, per ounce, dan per kilo. "
                 "Gunakan ketika user tanya harga perak, silver price, atau perak hari ini."
             ),
             "parameters": {"type": "object", "properties": {}},
@@ -25,7 +25,7 @@ SCHEMAS = [
 async def handle_get_silver_price(arguments: dict[str, Any], user_id: int) -> str:
     data = await asyncio.to_thread(fetch_silver_price_idr)
     payload = {
-        "source": "harga-emas.org/perak",
+        "source": "bullion-rates.com/silver/IDR",
         "prices": data,
     }
     return json.dumps({"tool": "get_silver_price", "data": payload}, ensure_ascii=False)
