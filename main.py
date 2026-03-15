@@ -24,7 +24,12 @@ async def main() -> None:
     logging.info("Starting SAFIA bot...")
     try:
         await init_db()
-        await dp.start_polling(bot)
+        # Each update runs in its own asyncio task; no concurrency limit so many users can be served in parallel.
+        await dp.start_polling(
+            bot,
+            handle_as_tasks=True,
+            tasks_concurrency_limit=None,
+        )
     finally:
         await close_redis()
         await close_db()

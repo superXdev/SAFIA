@@ -70,6 +70,18 @@ CHAT_KEY_PREFIX = "safia:chat:"
 PRICE_CACHE_TTL_SECONDS = 6 * 60 * 60
 PRICE_CACHE_KEY_GOLD = "safia:price:gold"
 PRICE_CACHE_KEY_SILVER = "safia:price:silver"
+
+# Currency rate cache — 1 hour per pair (used for USD/IDR and universal converter)
+RATE_CACHE_TTL_SECONDS = 60 * 60
+RATE_CACHE_KEY_PREFIX = "safia:rate:"
+# Backward compat for market_prices USD→IDR
+USDIDR_CACHE_TTL_SECONDS = RATE_CACHE_TTL_SECONDS
+PRICE_CACHE_KEY_USDIDR = "safia:price:usdidr"
+
+# Market data cache TTL (stock = less frequent, crypto = more volatile)
+MARKET_CACHE_TTL_STOCK_SECONDS = 10 * 60   # 10 min
+MARKET_CACHE_TTL_FOREX_SECONDS = 5 * 60     # 5 min
+MARKET_CACHE_TTL_CRYPTO_SECONDS = 2 * 60   # 2 min
 MAX_CHAT_MESSAGES = 10  # 5 conversations (5 user + 5 assistant)
 HISTORY_TTL_SECONDS = 2 * 60 * 60  # 2 hours
 
