@@ -99,7 +99,7 @@ async def handle_photo(message: Message) -> None:
         )
         return
 
-    typing = await message.answer("Memproses dokumen...", parse_mode=ParseMode.MARKDOWN)
+    typing = await message.answer("Memproses gambar...", parse_mode=ParseMode.MARKDOWN)
 
     # Telegram sends multiple sizes; use the largest
     photo = message.photo[-1]

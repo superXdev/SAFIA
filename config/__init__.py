@@ -11,16 +11,14 @@ TELEGRAM_BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 # -----------------------------------------------------------------------------
 # LLM (Groq)
 # -----------------------------------------------------------------------------
-LLM_API_KEY = os.environ["LLM_API_KEY"]
-LLM_BASE_URL = "https://api.groq.com/openai/v1"
+OPENROUTER_API_KEY = os.environ["OPENROUTER_API_KEY"]
 MODEL = "openai/gpt-oss-120b"
+GROQ_API_KEY = os.environ["GROQ_API_KEY"]
 
 # -----------------------------------------------------------------------------
-# Document vision (OpenRouter) — optional, for photo/document extraction
+# Document vision — optional, for photo/document extraction
 # -----------------------------------------------------------------------------
-OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
-OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-VISION_MODEL = os.environ.get("OPENROUTER_VISION_MODEL", "google/gemini-2.5-flash")
+VISION_MODEL = "openai/gpt-5-mini"
 
 # -----------------------------------------------------------------------------
 # Redis

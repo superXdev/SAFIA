@@ -6,10 +6,11 @@ from pathlib import Path
 
 from openai import AsyncOpenAI
 
-from config import LLM_API_KEY, LLM_BASE_URL, MODEL
+from config import GROQ_API_KEY, MODEL
 from services.tools import TOOLS, run_tool
 
 _client: AsyncOpenAI | None = None
+_groq_client: AsyncOpenAI | None = None
 
 MAX_TOOL_ROUNDS = 5
 
@@ -20,14 +21,21 @@ WIB = timezone(timedelta(hours=7))
 def get_client() -> AsyncOpenAI:
     global _client
     if _client is None:
-        _client = AsyncOpenAI(base_url=LLM_BASE_URL, api_key=LLM_API_KEY)
+        _client = AsyncOpenAI(base_url="https://api.groq.com/openai/v1", api_key=GROQ_API_KEY)
     return _client
+
+
+def get_groq_client() -> AsyncOpenAI:
+    global _groq_client
+    if _groq_client is None:
+        _groq_client = AsyncOpenAI(base_url="https://api.groq.com/openai/v1", api_key=GROQ_API_KEY)
+    return _groq_client
 
 
 async def transcribe(audio_path: Path) -> str:
     """Transcribe audio file to text using Groq Whisper."""
     try:
-        client = get_client()
+        client = get_groq_client()
         with open(audio_path, "rb") as f:
             result = await client.audio.transcriptions.create(
                 file=f,

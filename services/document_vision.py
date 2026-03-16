@@ -6,7 +6,7 @@ from pathlib import Path
 
 from openai import AsyncOpenAI
 
-from config import OPENROUTER_API_KEY, OPENROUTER_BASE_URL, VISION_MODEL
+from config import VISION_MODEL, OPENROUTER_API_KEY
 
 DOCUMENT_EXTRACT_SYSTEM = (
     "You are a document OCR assistant for financial documents. Extract key text and "
@@ -33,8 +33,12 @@ def _get_vision_client() -> AsyncOpenAI | None:
     global _vision_client
     if _vision_client is None:
         _vision_client = AsyncOpenAI(
-            base_url=OPENROUTER_BASE_URL,
+            base_url="https://openrouter.ai/api/v1",
             api_key=OPENROUTER_API_KEY,
+            default_headers={
+                "HTTP-Referer": "https://github.com/superxdev",
+                "X-OpenRouter-Title": "SAFIA",
+            },
         )
     return _vision_client
 
@@ -76,6 +80,11 @@ async def extract_document_text(image_path: Path) -> str:
                     ],
                 },
             ],
+            extra_body={
+                "provider": {
+                    "order": ["google-ai-studio", "google-vertex/global"]
+                },
+            },
         )
         text = (response.choices[0].message.content or "").strip()
         return text
