@@ -25,7 +25,7 @@ SCHEMAS = [
                 "type": "object",
                 "properties": {
                     "query": {
-                        "type": "string",
+                        "type": ["string", "null"],
                         "description": "Kata kunci pencarian (nama emiten atau sektor), opsional. Contoh: bank, BBCA, telkom.",
                     },
                     "limit": {
@@ -51,7 +51,7 @@ SCHEMAS = [
                 "type": "object",
                 "properties": {
                     "symbol": {
-                        "type": "string",
+                        "type": ["string", "null"],
                         "description": "Filter simbol pair, opsional. Contoh: USD, EURUSD, GBPUSD.",
                     },
                     "limit": {
@@ -77,7 +77,7 @@ SCHEMAS = [
                 "type": "object",
                 "properties": {
                     "symbol": {
-                        "type": "string",
+                        "type": ["string", "null"],
                         "description": "Filter simbol kripto, opsional. Contoh: BTC, ETH, BNB.",
                     },
                     "limit": {

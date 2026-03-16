@@ -3,6 +3,7 @@ import logging
 from typing import Any
 
 from services.tools.assets import HANDLERS as ASSET_HANDLERS, SCHEMAS as ASSET_SCHEMAS
+from services.tools.crypto_market import HANDLERS as CRYPTO_MARKET_HANDLERS, SCHEMAS as CRYPTO_MARKET_SCHEMAS
 from services.tools.currency import HANDLERS as CURRENCY_HANDLERS, SCHEMAS as CURRENCY_SCHEMAS
 from services.tools.debts import HANDLERS as DEBT_HANDLERS, SCHEMAS as DEBT_SCHEMAS
 from services.tools.gold import HANDLERS as GOLD_HANDLERS, SCHEMAS as GOLD_SCHEMAS
@@ -12,7 +13,7 @@ from services.tools.silver import HANDLERS as SILVER_HANDLERS, SCHEMAS as SILVER
 
 TOOLS = (
     RECORD_SCHEMAS + DEBT_SCHEMAS + ASSET_SCHEMAS + GOLD_SCHEMAS
-    + SILVER_SCHEMAS + PRICE_SCHEMAS + CURRENCY_SCHEMAS
+    + SILVER_SCHEMAS + PRICE_SCHEMAS + CURRENCY_SCHEMAS + CRYPTO_MARKET_SCHEMAS
 )
 
 _HANDLERS: dict[str, Any] = {
@@ -23,6 +24,7 @@ _HANDLERS: dict[str, Any] = {
     **SILVER_HANDLERS,
     **PRICE_HANDLERS,
     **CURRENCY_HANDLERS,
+    **CRYPTO_MARKET_HANDLERS,
 }
 
 

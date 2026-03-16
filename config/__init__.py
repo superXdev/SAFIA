@@ -20,7 +20,7 @@ MODEL = "openai/gpt-oss-120b"
 # -----------------------------------------------------------------------------
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-VISION_MODEL = os.environ.get("OPENROUTER_VISION_MODEL", "nvidia/nemotron-nano-12b-v2-vl:free")
+VISION_MODEL = os.environ.get("OPENROUTER_VISION_MODEL", "google/gemini-2.5-flash")
 
 # -----------------------------------------------------------------------------
 # Redis
@@ -46,6 +46,10 @@ PRICE_CACHE_KEY_USDIDR = "safia:price:usdidr"
 MARKET_CACHE_TTL_STOCK_SECONDS = 10 * 60   # 10 min
 MARKET_CACHE_TTL_FOREX_SECONDS = 5 * 60    # 5 min
 MARKET_CACHE_TTL_CRYPTO_SECONDS = 2 * 60   # 2 min
+COINGECKO_CACHE_TTL_MARKETS = 5 * 60       # 5 min
+COINGECKO_CACHE_TTL_COIN = 10 * 60         # 10 min
+COINGECKO_CACHE_TTL_TRENDING = 15 * 60     # 15 min
+COINGECKO_CACHE_TTL_SEARCH = 60 * 60       # 1 hour
 
 # -----------------------------------------------------------------------------
 # Chat history
