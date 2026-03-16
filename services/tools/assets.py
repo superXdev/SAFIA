@@ -5,11 +5,12 @@ from typing import Any
 
 from services.currency_rate import get_currency_rate
 from services.database import (
+    delete_all_assets,
     delete_assets,
     get_assets,
+    get_asset,
     save_asset,
     update_asset,
-    get_asset,
 )
 
 SCHEMAS = [
@@ -166,6 +167,18 @@ SCHEMAS = [
                 },
                 "required": ["asset_ids"],
             },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "reset_portfolio",
+            "description": (
+                "Hapus semua data portofolio/aset user (reset/erase seluruh database aset investasi). "
+                "Gunakan hanya ketika user dengan tegas minta reset atau hapus semua portofolio/aset. "
+                "Konfirmasi dulu sebelum memanggil."
+            ),
+            "parameters": {"type": "object", "properties": {}},
         },
     },
 ]
@@ -415,6 +428,12 @@ async def handle_delete_assets(arguments: dict[str, Any], user_id: int) -> str:
     return json.dumps({"tool": "delete_assets", "data": payload}, ensure_ascii=False)
 
 
+async def handle_reset_portfolio(arguments: dict[str, Any], user_id: int) -> str:
+    deleted = await delete_all_assets(user_id)
+    payload = {"deleted_count": deleted}
+    return json.dumps({"tool": "reset_portfolio", "data": payload}, ensure_ascii=False)
+
+
 HANDLERS: dict[str, Any] = {
     "asset_record": handle_asset_record,
     "asset_sell": handle_asset_sell,
@@ -422,4 +441,5 @@ HANDLERS: dict[str, Any] = {
     "get_assets_summary": handle_get_assets_summary,
     "rebalance_suggestion": handle_rebalance_suggestion,
     "delete_assets": handle_delete_assets,
+    "reset_portfolio": handle_reset_portfolio,
 }

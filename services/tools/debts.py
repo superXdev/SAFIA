@@ -2,7 +2,7 @@
 import json
 from typing import Any
 
-from services.database import delete_debts, get_debts, save_debt, settle_debt
+from services.database import delete_all_debts, delete_debts, get_debts, save_debt, settle_debt
 
 SCHEMAS = [
     {
@@ -106,6 +106,18 @@ SCHEMAS = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "reset_debts",
+            "description": (
+                "Hapus semua data utang/piutang user (reset/erase seluruh database utang). "
+                "Gunakan hanya ketika user dengan tegas minta reset atau hapus semua utang/piutang. "
+                "Konfirmasi dulu sebelum memanggil."
+            ),
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
 ]
 
 
@@ -156,9 +168,16 @@ async def handle_delete_debt(arguments: dict[str, Any], user_id: int) -> str:
     return json.dumps({"tool": "delete_debt", "data": payload}, ensure_ascii=False)
 
 
+async def handle_reset_debts(arguments: dict[str, Any], user_id: int) -> str:
+    deleted = await delete_all_debts(user_id)
+    payload = {"deleted_count": deleted}
+    return json.dumps({"tool": "reset_debts", "data": payload}, ensure_ascii=False)
+
+
 HANDLERS: dict[str, Any] = {
     "debt_record": handle_debt_record,
     "get_debts": handle_get_debts,
     "settle_debt": handle_settle_debt,
     "delete_debt": handle_delete_debt,
+    "reset_debts": handle_reset_debts,
 }

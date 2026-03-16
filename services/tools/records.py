@@ -185,6 +185,18 @@ SCHEMAS = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "reset_records",
+            "description": (
+                "Hapus semua catatan pemasukan/pengeluaran user (reset/erase seluruh database records). "
+                "Gunakan hanya ketika user dengan tegas minta reset atau hapus semua catatan keuangan. "
+                "Konfirmasi dulu sebelum memanggil."
+            ),
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
 ]
 
 
@@ -360,10 +372,17 @@ async def handle_delete_records(arguments: dict[str, Any], user_id: int) -> str:
     return json.dumps({"tool": "delete_records", "data": payload}, ensure_ascii=False)
 
 
+async def handle_reset_records(arguments: dict[str, Any], user_id: int) -> str:
+    deleted = await delete_records(user_id)
+    payload = {"deleted_count": deleted}
+    return json.dumps({"tool": "reset_records", "data": payload}, ensure_ascii=False)
+
+
 HANDLERS: dict[str, Any] = {
     "expense_record": handle_expense_record,
     "income_record": handle_income_record,
     "get_records": handle_get_records,
     "get_records_summary": handle_get_records_summary,
     "delete_records": handle_delete_records,
+    "reset_records": handle_reset_records,
 }

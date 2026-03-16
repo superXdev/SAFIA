@@ -254,6 +254,15 @@ async def delete_debts(user_id: int, debt_ids: list[int]) -> int:
         return result.rowcount
 
 
+async def delete_all_debts(user_id: int) -> int:
+    """Delete all debts for a user. Returns count deleted."""
+    async with AsyncSessionMaker() as session:
+        stmt = delete(Debt).where(Debt.user_id == user_id)
+        result = await session.execute(stmt)
+        await session.commit()
+        return result.rowcount
+
+
 # --- Assets ---
 
 async def save_asset(
@@ -408,6 +417,15 @@ async def delete_assets(user_id: int, asset_ids: list[int]) -> int:
             Asset.user_id == user_id,
             Asset.id.in_(asset_ids),
         )
+        result = await session.execute(stmt)
+        await session.commit()
+        return result.rowcount
+
+
+async def delete_all_assets(user_id: int) -> int:
+    """Delete all assets (portfolio) for a user. Returns count deleted."""
+    async with AsyncSessionMaker() as session:
+        stmt = delete(Asset).where(Asset.user_id == user_id)
         result = await session.execute(stmt)
         await session.commit()
         return result.rowcount
