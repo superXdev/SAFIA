@@ -14,11 +14,10 @@ dependencies = [
     "asyncpg>=0.29.0",
     "beautifulsoup4>=4.12.0",
     "scrapling[fetchers]>=0.4.2",
-    "yfinance>=0.2.66",
     "tvscreener>=0.2.0",
-    "pytesseract>=0.3.13",
-    "pillow>=12.1.1",
 ]
 
-[project.optional-dependencies]
-dev = ["watchfiles>=0.24.0"]
+[dependency-groups]
+dev = [
+    "watchfiles>=1.1.1",
+]
