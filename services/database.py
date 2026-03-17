@@ -1,13 +1,13 @@
 """Async SQLAlchemy setup and simple helpers."""
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 
 from sqlalchemy import Boolean, DateTime, Float, Integer, String, delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from config import DATABASE_URL
-from services.models import Asset, Base, Debt, Record, User
+from services.models import Asset, Base, DailyMetrics, Debt, Record, User
 
 
 engine = create_async_engine(
@@ -62,6 +62,8 @@ async def get_or_create_user(
             session.add(user)
             await session.commit()
             await session.refresh(user)
+
+            await increment_daily_metrics(registrations_delta=1)
 
         return user
 
@@ -429,4 +431,171 @@ async def delete_all_assets(user_id: int) -> int:
         result = await session.execute(stmt)
         await session.commit()
         return result.rowcount
+
+
+async def increment_daily_metrics(
+    *,
+    registrations_delta: int = 0,
+    messages_delta: int = 0,
+    tokens_delta: int = 0,
+    active_users_delta: int = 0,
+) -> None:
+    """Increment daily metrics counters for today."""
+    if not any(
+        (
+            registrations_delta,
+            messages_delta,
+            tokens_delta,
+            active_users_delta,
+        )
+    ):
+        return
+
+    today = date.today()
+    async with AsyncSessionMaker() as session:
+        result = await session.execute(
+            select(DailyMetrics).where(DailyMetrics.date == today)
+        )
+        metrics = result.scalar_one_or_none()
+
+        if metrics is None:
+            metrics = DailyMetrics(
+                date=today,
+                registrations=0,
+                total_messages=0,
+                total_tokens=0,
+                active_users=0,
+            )
+            session.add(metrics)
+
+        metrics.registrations += registrations_delta
+        metrics.total_messages += messages_delta
+        metrics.total_tokens += tokens_delta
+        metrics.active_users += active_users_delta
+
+        await session.commit()
+
+
+async def get_overall_metrics() -> dict:
+    """Aggregate high-level metrics for the admin dashboard."""
+    async with AsyncSessionMaker() as session:
+        result = await session.execute(select(func.count(User.id)))
+        total_users = int(result.scalar_one() or 0)
+
+        today = date.today()
+        yesterday = today - timedelta(days=1)
+
+        result = await session.execute(
+            select(
+                func.coalesce(func.sum(DailyMetrics.active_users), 0),
+                func.coalesce(func.sum(DailyMetrics.total_messages), 0),
+                func.coalesce(func.sum(DailyMetrics.total_tokens), 0),
+            ).where(DailyMetrics.date == today)
+        )
+        active_today, messages_today, tokens_today = result.one()
+
+        result = await session.execute(
+            select(func.coalesce(func.sum(DailyMetrics.active_users), 0)).where(
+                DailyMetrics.date >= yesterday
+            )
+        )
+        active_24h = int(result.scalar_one() or 0)
+
+        avg_messages_per_user = 0.0
+        if total_users > 0:
+            avg_messages_per_user = float(messages_today) / float(total_users)
+
+    return {
+        "total_users": int(total_users),
+        "active_24h": int(active_24h),
+        "sessions_today": int(messages_today),
+        "avg_messages_per_user": round(avg_messages_per_user, 2),
+        "tokens_today": int(tokens_today),
+    }
+
+
+async def get_daily_metrics(last_days: int = 30) -> list[dict]:
+    """Return list of daily metrics for the last N days (inclusive)."""
+    if last_days <= 0:
+        last_days = 1
+
+    start_date = date.today() - timedelta(days=last_days - 1)
+
+    async with AsyncSessionMaker() as session:
+        result = await session.execute(
+            select(DailyMetrics)
+            .where(DailyMetrics.date >= start_date)
+            .order_by(DailyMetrics.date.asc())
+        )
+        rows = result.scalars().all()
+
+    out: list[dict] = []
+    for r in rows:
+        out.append(
+            {
+                "date": r.date.isoformat(),
+                "registrations": int(r.registrations),
+                "active_users": int(r.active_users),
+                "total_messages": int(r.total_messages),
+                "total_tokens": int(r.total_tokens),
+            }
+        )
+    return out
+
+
+async def get_all_users_with_stats() -> list[dict]:
+    """Return all users with record counts and activity status."""
+    seven_days_ago = date.today() - timedelta(days=7)
+
+    recent_count = (
+        select(
+            Record.user_id,
+            func.count(Record.id).label("recent"),
+        )
+        .where(func.date(Record.created_at) >= seven_days_ago)
+        .group_by(Record.user_id)
+        .subquery()
+    )
+
+    total_count = (
+        select(
+            Record.user_id,
+            func.count(Record.id).label("total"),
+        )
+        .group_by(Record.user_id)
+        .subquery()
+    )
+
+    stmt = (
+        select(
+            User,
+            func.coalesce(total_count.c.total, 0).label("total_records"),
+            func.coalesce(recent_count.c.recent, 0).label("recent_records"),
+        )
+        .outerjoin(total_count, User.telegram_id == total_count.c.user_id)
+        .outerjoin(recent_count, User.telegram_id == recent_count.c.user_id)
+        .order_by(User.created_at.desc())
+    )
+
+    async with AsyncSessionMaker() as session:
+        result = await session.execute(stmt)
+        rows = result.all()
+
+    out: list[dict] = []
+    for user, total_records, recent_records in rows:
+        name_parts = [user.first_name or "", user.last_name or ""]
+        name = " ".join(p for p in name_parts if p) or "Unknown"
+        status = "active" if int(recent_records) > 0 else "inactive"
+        out.append(
+            {
+                "id": user.id,
+                "telegram_id": user.telegram_id,
+                "name": name,
+                "username": user.username,
+                "status": status,
+                "records": int(total_records),
+                "joined": user.created_at.strftime("%Y-%m-%d") if user.created_at else "",
+            }
+        )
+    return out
 

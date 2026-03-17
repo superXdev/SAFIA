@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="content-header">
+  <div class="content-title-block">
+    <h1>System Analytics</h1>
+    <p>Real-time signals for how SAFIA is performing right now.</p>
+  </div>
+  <div class="header-actions">
+    <span class="chip live-dot">Live</span>
+    <span class="timestamp">{{ now }} UTC</span>
+  </div>
+</div>
+
+<section class="grid">
+  <article class="card card-accent-indigo delay-1">
+    <div class="card-head">
+      <span class="card-label">Total Users</span>
+      <span class="tag tag-ok">registry</span>
+    </div>
+    <div class="card-number">{{ "{:,}".format(metrics.total_users) }}</div>
+    <div class="card-desc">
+      <strong>{{ metrics.active_24h }}</strong> active in 24h &middot;
+      ~{{ metrics.avg_messages_per_user }} msg/user
+    </div>
+  </article>
+
+  <article class="card card-accent-cyan delay-2">
+    <div class="card-head">
+      <span class="card-label">Messages Today</span>
+      <span class="tag tag-info">load</span>
+    </div>
+    <div class="card-number">{{ "{:,}".format(metrics.sessions_today) }}</div>
+    <div class="card-desc">Total messages processed since midnight.</div>
+  </article>
+
+  <article class="card card-accent-amber delay-3">
+    <div class="card-head">
+      <span class="card-label">Tokens Today</span>
+      <span class="tag tag-info">
+        {{ "{:,}".format(metrics.tokens_today) }} tokens
+      </span>
+    </div>
+    <div class="card-number">{{ "{:,}".format(metrics.tokens_today) }}</div>
+    <div class="card-desc">Sum of all tokens consumed today.</div>
+  </article>
+
+  <article class="card card-accent-rose delay-4">
+    <div class="card-head">
+      <span class="card-label">New Users Today</span>
+      <span class="tag tag-ok">
+        +{{ daily_registrations[-1] if daily_registrations else 0 }}
+      </span>
+    </div>
+    <div class="card-number">
+      {{ daily_registrations[-1] if daily_registrations else 0 }}
+    </div>
+    <div class="card-desc">Registrations recorded in the latest day.</div>
+  </article>
+</section>
+
+<section class="grid" style="grid-template-columns: 1.4fr 1fr;">
+  <article class="card delay-5" style="--card-accent: linear-gradient(90deg, #6366f1, #22d3ee);">
+    <div class="card-head">
+      <span class="card-label">Active vs New Users</span>
+      <span class="tag tag-info">last 30 days</span>
+    </div>
+    <div style="position:relative;height:240px;">
+      <canvas id="usersChart"></canvas>
+    </div>
+  </article>
+
+  <article class="card delay-5" style="--card-accent: linear-gradient(90deg, #a855f7, #ec4899);">
+    <div class="card-head">
+      <span class="card-label">Daily Token Usage</span>
+      <span class="tag tag-info">last 30 days</span>
+    </div>
+    <div style="position:relative;height:240px;">
+      <canvas id="tokensChart"></canvas>
+    </div>
+  </article>
+</section>
+
+<script>
+  const labels = {{ daily_labels | tojson | safe }};
+  const registrations = {{ daily_registrations | tojson | safe }};
+  const activeUsers = {{ daily_active_users | tojson | safe }};
+  const tokens = {{ daily_tokens | tojson | safe }};
+
+  const usersCtx = document.getElementById('usersChart');
+  if (usersCtx) {
+    new Chart(usersCtx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'New users',
+            data: registrations,
+            borderColor: '#22d3ee',
+            backgroundColor: 'rgba(34, 211, 238, 0.25)',
+            tension: 0.35,
+            fill: true,
+          },
+          {
+            label: 'Active users',
+            data: activeUsers,
+            borderColor: '#a855f7',
+            backgroundColor: 'rgba(168, 85, 247, 0.18)',
+            tension: 0.35,
+            fill: true,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            labels: {
+              color: '#9ca3af',
+              font: { family: 'Inter', size: 11 },
+            },
+          },
+        },
+        scales: {
+          x: {
+            ticks: { color: '#6b7280', maxRotation: 0, autoSkip: true, maxTicksLimit: 8 },
+            grid: { display: false },
+          },
+          y: {
+            ticks: { color: '#6b7280' },
+            grid: { color: 'rgba(148, 163, 184, 0.1)' },
+          },
+        },
+      },
+    });
+  }
+
+  const tokensCtx = document.getElementById('tokensChart');
+  if (tokensCtx) {
+    new Chart(tokensCtx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Tokens',
+            data: tokens,
+            backgroundColor: 'rgba(236, 72, 153, 0.45)',
+            borderColor: '#ec4899',
+            borderWidth: 1,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            labels: {
+              color: '#9ca3af',
+              font: { family: 'Inter', size: 11 },
+            },
+          },
+        },
+        scales: {
+          x: {
+            ticks: { color: '#6b7280', maxRotation: 0, autoSkip: true, maxTicksLimit: 8 },
+            grid: { display: false },
+          },
+          y: {
+            ticks: { color: '#6b7280' },
+            grid: { color: 'rgba(148, 163, 184, 0.1)' },
+          },
+        },
+      },
+    });
+  }
+</script>
+{% endblock %}

@@ -1,9 +1,9 @@
 """SQLAlchemy ORM models."""
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 
-from sqlalchemy import BigInteger, Boolean, DateTime, Float, Integer, String, func
+from sqlalchemy import BigInteger, Boolean, Date, DateTime, Float, Integer, String, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -75,4 +75,15 @@ class Asset(Base):
         server_default=func.now(),
         onupdate=func.now(),
     )
+
+
+class DailyMetrics(Base):
+    __tablename__ = "daily_metrics"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    date: Mapped[date] = mapped_column(Date, unique=True, index=True)
+    registrations: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    total_messages: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    total_tokens: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
+    active_users: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 

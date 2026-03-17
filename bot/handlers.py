@@ -7,7 +7,12 @@ from aiogram.types import Message
 from aiogram.enums import ParseMode
 
 from services.llm import chat as llm_chat, transcribe
-from services.chat_history import clear_history, get_history, save_history
+from services.chat_history import (
+    check_and_increment_rate_limit,
+    clear_history,
+    get_history,
+    save_history,
+)
 from services.database import get_or_create_user
 from services.document_vision import extract_document_text, parse_final_amount
 from config import OPENROUTER_API_KEY
@@ -40,15 +45,16 @@ async def handle_start(message: Message) -> None:
     await message.answer(text, parse_mode=ParseMode.MARKDOWN)
 
 
-async def handle_reset(message: Message) -> None:
-    await clear_history(message.chat.id)
-    await message.answer(
-        "Percakapan telah direset.",
-        parse_mode=ParseMode.MARKDOWN,
-    )
-
-
 async def handle_message(message: Message) -> None:
+    allowed, remaining = await check_and_increment_rate_limit(message.from_user.id)
+    if not allowed:
+        await message.answer(
+            "Kamu sudah mencapai batas 25 pesan hari ini.\n"
+            "Coba lagi besok ya, atau reset percakapan jika perlu.",
+            parse_mode=ParseMode.MARKDOWN,
+        )
+        return
+
     history = await get_history(message.chat.id)
     history.append({"role": "user", "content": message.text or ""})
 
@@ -61,6 +67,15 @@ async def handle_message(message: Message) -> None:
 
 
 async def handle_voice(message: Message) -> None:
+    allowed, remaining = await check_and_increment_rate_limit(message.from_user.id)
+    if not allowed:
+        await message.answer(
+            "Kamu sudah mencapai batas 25 pesan hari ini.\n"
+            "Coba lagi besok ya, atau reset percakapan jika perlu.",
+            parse_mode=ParseMode.MARKDOWN,
+        )
+        return
+
     typing = await message.answer("Mendengarkan...", parse_mode=ParseMode.MARKDOWN)
 
     file = await message.bot.get_file(message.voice.file_id)
@@ -95,6 +110,15 @@ async def handle_photo(message: Message) -> None:
     if not OPENROUTER_API_KEY:
         await message.answer(
             "Fitur foto dokumen belum diaktifkan. Hubungi admin.",
+            parse_mode=ParseMode.MARKDOWN,
+        )
+        return
+
+    allowed, remaining = await check_and_increment_rate_limit(message.from_user.id)
+    if not allowed:
+        await message.answer(
+            "Kamu sudah mencapai batas 25 pesan hari ini.\n"
+            "Coba lagi besok ya, atau reset percakapan jika perlu.",
             parse_mode=ParseMode.MARKDOWN,
         )
         return
@@ -141,7 +165,6 @@ async def handle_photo(message: Message) -> None:
 
 def register_handlers(dp: Dispatcher) -> None:
     dp.message.register(handle_start, F.text == "/start")
-    dp.message.register(handle_reset, F.text == "/reset")
     dp.message.register(handle_voice, F.voice)
     dp.message.register(handle_photo, F.photo)
     dp.message.register(handle_message, F.text)

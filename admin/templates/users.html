@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="content-header">
+  <div class="content-title-block">
+    <h1>User Registry</h1>
+    <p>Overview of all registered users and their activity.</p>
+  </div>
+  <div class="header-actions">
+    <span class="chip">{{ rows|length }} users</span>
+    <span class="timestamp">{{ now }} UTC</span>
+  </div>
+</div>
+
+<article class="card table-card delay-1">
+  <div class="card-head">
+    <span class="card-label">All Users</span>
+    <span class="tag tag-info">{{ rows|length }} total</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Handle</th>
+          <th>Status</th>
+          <th>Records</th>
+          <th>Joined</th>
+          <th style="text-align:right;">Telegram ID</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for u in rows %}
+        <tr style="animation: fade-up 0.4s ease-out {{ 0.08 * loop.index }}s both;">
+          <td>
+            <div class="user-cell">
+              <div class="avatar avatar-{{ (loop.index % 5) or 5 }}">{{ u.name[0] }}</div>
+              <span class="user-info-name">{{ u.name }}</span>
+            </div>
+          </td>
+          <td><span class="mono" style="color:var(--text-tertiary);">@{{ u.username or "—" }}</span></td>
+          <td>
+            <span class="tag {% if u.status == 'active' %}tag-ok{% else %}tag-warn{% endif %}">
+              {{ u.status }}
+            </span>
+          </td>
+          <td><span class="mono">{{ u.records }}</span></td>
+          <td><span class="mono" style="color:var(--text-tertiary);">{{ u.joined }}</span></td>
+          <td style="text-align:right;"><span class="mono" style="color:var(--text-tertiary);">{{ u.telegram_id }}</span></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</article>
+{% endblock %}

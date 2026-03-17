@@ -6,14 +6,15 @@ from config.prompt import SYSTEM_PROMPT
 # -----------------------------------------------------------------------------
 # Bot
 # -----------------------------------------------------------------------------
-TELEGRAM_BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
+# Optional for admin dashboard; mandatory for bot runtime.
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 
 # -----------------------------------------------------------------------------
 # LLM (Groq)
 # -----------------------------------------------------------------------------
-OPENROUTER_API_KEY = os.environ["OPENROUTER_API_KEY"]
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 MODEL = "openai/gpt-oss-120b"
-GROQ_API_KEY = os.environ["GROQ_API_KEY"]
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 
 # -----------------------------------------------------------------------------
 # Document vision — optional, for photo/document extraction
@@ -56,7 +57,13 @@ MAX_CHAT_MESSAGES = 10   # 5 user + 5 assistant
 HISTORY_TTL_SECONDS = 2 * 60 * 60  # 2 hours
 
 # -----------------------------------------------------------------------------
+# Rate limiting
+# -----------------------------------------------------------------------------
+DAILY_MESSAGE_LIMIT = 25
+RATE_LIMIT_KEY_PREFIX = "safia:rate:"
+
+# -----------------------------------------------------------------------------
 # Database
 # -----------------------------------------------------------------------------
 # Example: postgresql+asyncpg://user:password@localhost:5432/safia
-DATABASE_URL = os.environ["DATABASE_URL"]
+DATABASE_URL = os.environ.get("DATABASE_URL", "")

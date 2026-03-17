@@ -7,6 +7,8 @@ from pathlib import Path
 from openai import AsyncOpenAI
 
 from config import GROQ_API_KEY, MODEL
+from services.chat_history import mark_user_active_today
+from services.database import increment_daily_metrics
 from services.tools import TOOLS, run_tool
 
 _client: AsyncOpenAI | None = None
@@ -53,6 +55,7 @@ async def chat(messages: list[dict], user_id: int) -> str:
     try:
         client = get_client()
         current = list(messages)
+        total_tokens = 0
         # Inject current date/time into system message so the model knows "today" (once per turn)
         if current and current[0].get("role") == "system":
             now = datetime.now(WIB)
@@ -65,9 +68,24 @@ async def chat(messages: list[dict], user_id: int) -> str:
                 messages=current,
                 tools=TOOLS,
             )
+
+            usage = response.usage
+            if usage is not None:
+                if getattr(usage, "total_tokens", None) is not None:
+                    total_tokens += int(usage.total_tokens)
+                else:
+                    prompt_tokens = getattr(usage, "prompt_tokens", 0) or 0
+                    completion_tokens = getattr(usage, "completion_tokens", 0) or 0
+                    total_tokens += int(prompt_tokens) + int(completion_tokens)
             msg = response.choices[0].message
 
             if not msg.tool_calls:
+                is_new_today = await mark_user_active_today(user_id)
+                await increment_daily_metrics(
+                    messages_delta=1,
+                    tokens_delta=total_tokens,
+                    active_users_delta=1 if is_new_today else 0,
+                )
                 return msg.content or "..."
 
             current.append(msg)
