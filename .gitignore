@@ -12,3 +12,6 @@ wheels/
 # Virtual environments
 .venv
 test.py
+
+# Knowledge base file copies (optional local audit)
+data/kb_uploads/

@@ -87,3 +87,22 @@ class DailyMetrics(Base):
     total_tokens: Mapped[int] = mapped_column(BigInteger, default=0, nullable=False)
     active_users: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
+
+class KnowledgeDocument(Base):
+    """Metadata for knowledge-base files; vectors live in Qdrant."""
+
+    __tablename__ = "kb_documents"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    document_id: Mapped[str] = mapped_column(String(36), unique=True, index=True)
+    title: Mapped[str] = mapped_column(String(255), default="", nullable=False)
+    filename: Mapped[str] = mapped_column(String(512), nullable=False)
+    mime_type: Mapped[str] = mapped_column(String(128), default="", nullable=False)
+    status: Mapped[str] = mapped_column(String(32), default="ready", nullable=False)
+    chunk_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    error_message: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+    )
+

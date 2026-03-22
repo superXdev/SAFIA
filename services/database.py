@@ -7,7 +7,7 @@ from sqlalchemy import Boolean, DateTime, Float, Integer, String, delete, func, 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from config import DATABASE_URL
-from services.models import Asset, Base, DailyMetrics, Debt, Record, User
+from services.models import Asset, Base, DailyMetrics, Debt, KnowledgeDocument, Record, User
 
 
 engine = create_async_engine(
@@ -598,4 +598,73 @@ async def get_all_users_with_stats() -> list[dict]:
             }
         )
     return out
+
+
+# --- Knowledge base (metadata; vectors in Qdrant) ---
+
+
+async def kb_create_document(
+    document_id: str,
+    filename: str,
+    mime_type: str,
+    title: str = "",
+    *,
+    chunk_count: int = 0,
+    status: str = "ready",
+    error_message: str | None = None,
+) -> KnowledgeDocument:
+    async with AsyncSessionMaker() as session:
+        row = KnowledgeDocument(
+            document_id=document_id,
+            title=(title or filename)[:255],
+            filename=filename[:512],
+            mime_type=(mime_type or "")[:128],
+            status=status,
+            chunk_count=chunk_count,
+            error_message=error_message[:512] if error_message else None,
+        )
+        session.add(row)
+        await session.commit()
+        await session.refresh(row)
+        return row
+
+
+async def kb_list_documents() -> list[dict]:
+    async with AsyncSessionMaker() as session:
+        result = await session.execute(
+            select(KnowledgeDocument).order_by(KnowledgeDocument.created_at.desc())
+        )
+        rows = result.scalars().all()
+    return [
+        {
+            "id": r.id,
+            "document_id": r.document_id,
+            "title": r.title,
+            "filename": r.filename,
+            "mime_type": r.mime_type,
+            "status": r.status,
+            "chunk_count": r.chunk_count,
+            "error_message": r.error_message or "",
+            "created_at": r.created_at.isoformat() if r.created_at else "",
+        }
+        for r in rows
+    ]
+
+
+async def kb_get_by_id(row_id: int) -> KnowledgeDocument | None:
+    async with AsyncSessionMaker() as session:
+        result = await session.execute(
+            select(KnowledgeDocument).where(KnowledgeDocument.id == row_id)
+        )
+        return result.scalar_one_or_none()
+
+
+async def kb_delete_row(row_id: int) -> bool:
+    """Delete metadata row by primary key. Returns True if a row was removed."""
+    async with AsyncSessionMaker() as session:
+        result = await session.execute(
+            delete(KnowledgeDocument).where(KnowledgeDocument.id == row_id)
+        )
+        await session.commit()
+        return (result.rowcount or 0) > 0
 

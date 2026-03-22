@@ -67,3 +67,34 @@ RATE_LIMIT_KEY_PREFIX = "safia:rate:"
 # -----------------------------------------------------------------------------
 # Example: postgresql+asyncpg://user:password@localhost:5432/safia
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
+
+# -----------------------------------------------------------------------------
+# Qdrant (knowledge base vectors)
+# -----------------------------------------------------------------------------
+QDRANT_URL = os.environ.get("QDRANT_URL", "http://127.0.0.1:6333")
+QDRANT_API_KEY = os.environ.get("QDRANT_API_KEY", "") or None
+KB_COLLECTION_NAME = os.environ.get("KB_COLLECTION_NAME", "safia_kb")
+
+# -----------------------------------------------------------------------------
+# Embeddings (OpenAI-compatible API; not Groq chat)
+# -----------------------------------------------------------------------------
+EMBEDDING_BASE_URL = os.environ.get("EMBEDDING_BASE_URL", "https://openrouter.ai/api/v1")
+EMBEDDING_API_KEY = os.environ.get("EMBEDDING_API_KEY", "") or os.environ.get("OPENROUTER_API_KEY", "")
+EMBEDDING_MODEL = os.environ.get("EMBEDDING_MODEL", "openai/text-embedding-3-small")
+EMBEDDING_VECTOR_SIZE = int(os.environ.get("EMBEDDING_VECTOR_SIZE", "1536"))
+
+# -----------------------------------------------------------------------------
+# Knowledge base ingest
+# -----------------------------------------------------------------------------
+# Knowledge chunks are word-based (split on whitespace), not characters.
+KB_CHUNK_WORDS = int(os.environ.get("KB_CHUNK_WORDS", "450"))
+KB_CHUNK_OVERLAP_WORDS = int(os.environ.get("KB_CHUNK_OVERLAP_WORDS", "70"))
+KB_UPLOAD_DIR = os.environ.get("KB_UPLOAD_DIR", "data/kb_uploads")
+KB_MAX_UPLOAD_MB = int(os.environ.get("KB_MAX_UPLOAD_MB", "15"))
+KB_EMBED_BATCH_SIZE = int(os.environ.get("KB_EMBED_BATCH_SIZE", "32"))
+
+# -----------------------------------------------------------------------------
+# Admin HTTP Basic Auth (set both to protect the dashboard)
+# -----------------------------------------------------------------------------
+ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")

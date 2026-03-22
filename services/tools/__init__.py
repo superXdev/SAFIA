@@ -7,6 +7,7 @@ from services.tools.crypto_market import HANDLERS as CRYPTO_MARKET_HANDLERS, SCH
 from services.tools.currency import HANDLERS as CURRENCY_HANDLERS, SCHEMAS as CURRENCY_SCHEMAS
 from services.tools.debts import HANDLERS as DEBT_HANDLERS, SCHEMAS as DEBT_SCHEMAS
 from services.tools.gold import HANDLERS as GOLD_HANDLERS, SCHEMAS as GOLD_SCHEMAS
+from services.tools.knowledge_search import HANDLERS as KNOWLEDGE_HANDLERS, SCHEMAS as KNOWLEDGE_SCHEMAS
 from services.tools.news_search import HANDLERS as NEWS_SEARCH_HANDLERS, SCHEMAS as NEWS_SEARCH_SCHEMAS
 from services.tools.prices import HANDLERS as PRICE_HANDLERS, SCHEMAS as PRICE_SCHEMAS
 from services.tools.records import HANDLERS as RECORD_HANDLERS, SCHEMAS as RECORD_SCHEMAS
@@ -15,7 +16,7 @@ from services.tools.silver import HANDLERS as SILVER_HANDLERS, SCHEMAS as SILVER
 TOOLS = (
     RECORD_SCHEMAS + DEBT_SCHEMAS + ASSET_SCHEMAS + GOLD_SCHEMAS
     + SILVER_SCHEMAS + PRICE_SCHEMAS + CURRENCY_SCHEMAS + CRYPTO_MARKET_SCHEMAS
-    + NEWS_SEARCH_SCHEMAS
+    + NEWS_SEARCH_SCHEMAS + KNOWLEDGE_SCHEMAS
 )
 
 _HANDLERS: dict[str, Any] = {
@@ -28,6 +29,7 @@ _HANDLERS: dict[str, Any] = {
     **CURRENCY_HANDLERS,
     **CRYPTO_MARKET_HANDLERS,
     **NEWS_SEARCH_HANDLERS,
+    **KNOWLEDGE_HANDLERS,
 }
 
 
