@@ -124,10 +124,10 @@
       </div>
       <div class="field">
         <label for="kb-file">File</label>
-        <input type="file" id="kb-file" name="file" accept=".pdf,.txt,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" required />
+        <input type="file" id="kb-file" name="files" multiple accept=".pdf,.txt,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" required />
       </div>
       <button type="submit" class="kb-submit">Indeks ke Qdrant</button>
-      <p class="kb-hint">Butuh Qdrant berjalan, <code>DATABASE_URL</code>, dan kunci embedding (<code>EMBEDDING_API_KEY</code> atau <code>OPENROUTER_API_KEY</code>).</p>
+      <p class="kb-hint">Bisa pilih banyak file sekaligus. Butuh Qdrant berjalan, <code>DATABASE_URL</code>, dan kunci embedding (<code>EMBEDDING_API_KEY</code> atau <code>OPENROUTER_API_KEY</code>).</p>
     </form>
   </article>
 

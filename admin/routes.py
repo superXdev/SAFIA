@@ -117,29 +117,66 @@ def knowledge() -> str:
 
 @bp.route("/knowledge/upload", methods=["POST"])
 def knowledge_upload():
-    f = request.files.get("file")
+    files = request.files.getlist("files")
+    if not files:
+        single = request.files.get("file")
+        if single:
+            files = [single]
+
     title = (request.form.get("title") or "").strip()
-    if not f or not f.filename:
+    if not files:
         flash("Pilih file terlebih dahulu.", "error")
         return redirect(url_for("admin.knowledge"))
-    raw_name = f.filename
-    safe = secure_filename(raw_name)
-    if not safe:
-        flash("Nama file tidak valid.", "error")
-        return redirect(url_for("admin.knowledge"))
-    suffix = Path(safe).suffix.lower()
-    if suffix not in ALLOWED_KB_SUFFIXES:
-        flash("Hanya PDF, TXT, atau DOCX yang didukung.", "error")
-        return redirect(url_for("admin.knowledge"))
-    data = f.read()
-    if not data:
-        flash("File kosong.", "error")
-        return redirect(url_for("admin.knowledge"))
-    mime = f.mimetype or ""
-    ok, msg = _loop.run_until_complete(
-        ingest_bytes(filename=safe, mime_type=mime, data=data, title=title)
-    )
-    flash(msg, "success" if ok else "error")
+
+    success_count = 0
+    fail_count = 0
+
+    for f in files:
+        if not f or not f.filename:
+            fail_count += 1
+            flash("Ada file tanpa nama, dilewati.", "error")
+            continue
+
+        raw_name = f.filename
+        safe = secure_filename(raw_name)
+        if not safe:
+            fail_count += 1
+            flash(f"Nama file tidak valid: {raw_name}", "error")
+            continue
+
+        suffix = Path(safe).suffix.lower()
+        if suffix not in ALLOWED_KB_SUFFIXES:
+            fail_count += 1
+            flash(f"{safe}: format tidak didukung (hanya PDF, TXT, DOCX).", "error")
+            continue
+
+        data = f.read()
+        if not data:
+            fail_count += 1
+            flash(f"{safe}: file kosong.", "error")
+            continue
+
+        mime = f.mimetype or ""
+        per_file_title = title if len(files) == 1 else ""
+        ok, msg = _loop.run_until_complete(
+            ingest_bytes(filename=safe, mime_type=mime, data=data, title=per_file_title)
+        )
+        if ok:
+            success_count += 1
+        else:
+            fail_count += 1
+        flash(f"{safe}: {msg}", "success" if ok else "error")
+
+    if success_count and fail_count:
+        flash(
+            f"Upload selesai: {success_count} berhasil, {fail_count} gagal.",
+            "success",
+        )
+    elif success_count:
+        flash(f"Upload selesai: {success_count} file berhasil diindeks.", "success")
+    else:
+        flash("Upload gagal. Tidak ada file yang berhasil diindeks.", "error")
+
     return redirect(url_for("admin.knowledge"))
 
 
