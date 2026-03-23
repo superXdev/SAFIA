@@ -12,6 +12,8 @@ Built with [aiogram 3](https://docs.aiogram.dev/), [Groq](https://groq.com/), an
 - **Portfolio rebalancing** — get suggestions based on target allocation percentages
 - **Market data** — live gold, silver, crypto, and currency exchange rates
 - **Financial news** — search relevant Indonesian financial news
+- **Auto reminders (background worker)** — create scheduled reminders for prices, news, finance note-taking, and portfolio digest (daily/weekly/monthly/interval)
+- **Habit-based reminder suggestions** — suggest reminders from user behavior patterns (records and asset activity)
 - **Document scanning** — send photos of receipts, invoices, or pay slips to auto-extract and record amounts
 - **Voice messages** — speak instead of type, powered by Whisper transcription
 - **Daily rate limiting** — 25 messages per user per day (configurable)
@@ -34,6 +36,10 @@ Built with [aiogram 3](https://docs.aiogram.dev/), [Groq](https://groq.com/), an
    OPENROUTER_API_KEY=your-openrouter-api-key
    DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/safia
    SERPAPI_KEY=your-serpapi-key
+   REMINDER_ENABLED=true
+   REMINDER_MAX_PER_USER=10
+   REMINDER_MAX_SENDS_PER_DAY=15
+   REMINDER_TICK_SECONDS=30
    ```
 
    **Knowledge base (optional):** run [Qdrant](https://qdrant.tech/) (for example `docker run -p 6333:6333 qdrant/qdrant`) and set:
@@ -54,6 +60,13 @@ Built with [aiogram 3](https://docs.aiogram.dev/), [Groq](https://groq.com/), an
    ADMIN_PASSWORD=your-strong-password
    FLASK_SECRET_KEY=random-string-for-flash-messages
    ```
+
+   **Reminder settings (optional):**
+
+   - `REMINDER_ENABLED` — enable/disable the background reminder loop
+   - `REMINDER_MAX_PER_USER` — hard cap of active reminders per user
+   - `REMINDER_MAX_SENDS_PER_DAY` — soft daily cap for proactive reminder sends
+   - `REMINDER_TICK_SECONDS` — polling interval for due reminders
 
 3. Run the bot:
 
@@ -76,6 +89,23 @@ Built with [aiogram 3](https://docs.aiogram.dev/), [Groq](https://groq.com/), an
 | `/start` | Start bot and reset chat |
 
 All other interactions happen through natural conversation — just chat normally.
+
+## Reminder Capabilities
+
+SAFIA supports tool-driven reminder management through chat:
+
+- `reminder_create` — create scheduled reminders (`price`, `news`, `note_expense`, `note_income`, `portfolio_digest`, `custom`)
+- `reminder_list` — list reminders
+- `reminder_pause` / `reminder_resume` — disable/enable reminders
+- `reminder_delete` — remove reminders
+- `reminder_suggest_from_habits` — generate reminder suggestions from financial behavior patterns
+
+The reminder runner executes in the bot process (`main.py`) as an async background task and uses PostgreSQL state (`reminders` table) for persistence.
+
+Reliability notes:
+
+- Designed for high reliability with persistent schedule state and retry/backoff behavior
+- "Zero failure" cannot be strictly guaranteed due to external dependencies (Telegram/network/API providers)
 
 ## Tech Stack
 

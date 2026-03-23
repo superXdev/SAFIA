@@ -157,14 +157,14 @@ async def handle_get_debts(arguments: dict[str, Any], user_id: int) -> str:
 async def handle_settle_debt(arguments: dict[str, Any], user_id: int) -> str:
     debt_ids = arguments["debt_ids"]
     settled = await settle_debt(user_id, debt_ids)
-    payload = {"debt_ids": debt_ids, "settled_count": settled}
+    payload = {"settled_count": settled}
     return json.dumps({"tool": "settle_debt", "data": payload}, ensure_ascii=False)
 
 
 async def handle_delete_debt(arguments: dict[str, Any], user_id: int) -> str:
     debt_ids = arguments["debt_ids"]
     deleted = await delete_debts(user_id, debt_ids)
-    payload = {"debt_ids": debt_ids, "deleted_count": deleted}
+    payload = {"deleted_count": deleted}
     return json.dumps({"tool": "delete_debt", "data": payload}, ensure_ascii=False)
 
 

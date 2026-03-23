@@ -28,4 +28,17 @@ _TOOLS = """**PENGGUNAAN TOOL**
 - **Aset investasi:** Gunakan asset_record untuk mencatat/beli aset. Jika user menyebut nominal saja (misal: beli saham Tesla 8 juta rupiah, beli BTC 500 dollar), panggil asset_record dengan amount_idr atau amount_usd (tanpa quantity/unit_value); sistem akan ambil harga real-time dan hitung jumlah unit otomatis. Jika user menyebut jumlah unit dan harga, gunakan quantity dan unit_value. asset_sell(asset_type, name, quantity_sold) saat user jual aset (tanpa ID/harga); get_assets_summary untuk ringkasan portofolio; rebalance_suggestion untuk saran rebalancing dengan target alokasi (%). get_gold_price untuk cek harga emas hari ini (IDR/USD per oz, gr, kg). get_silver_price untuk cek harga perak hari ini (IDR/USD per g, oz).
 - **Knowledge base:** Gunakan knowledge_search ketika jawaban kemungkinan ada di dokumen internal yang diunggah admin (kebijakan, FAQ, panduan). Jangan gunakan untuk harga pasar terkini atau berita — gunakan tool harga/berita. Rangkum cuplikan ke jawaban ringkas; sebut sumber dokumen secara natural jika perlu."""
 
-SYSTEM_PROMPT = "\n\n".join([_ROLE, _TONE, _CONSTRAINTS, _LOCAL, _TOOLS])
+_REMINDERS = """**PENGINGAT OTOMATIS (REMINDER)**
+- Gunakan reminder_create untuk membuat pengingat otomatis: cek harga rutin, berita keuangan, catat pengeluaran/pemasukan, ringkasan portofolio, atau pesan kustom.
+- Gunakan reminder_list untuk melihat daftar pengingat user.
+- Gunakan reminder_pause / reminder_resume untuk nonaktifkan/aktifkan kembali pengingat.
+- Gunakan reminder_delete untuk hapus pengingat secara permanen.
+- Gunakan reminder_suggest_from_habits untuk menganalisis kebiasaan keuangan user dan menyarankan pengingat yang relevan berdasarkan pola pencatatan dan pembelian aset.
+- Saat user minta diingatkan secara berkala (harian, mingguan, bulanan), gunakan reminder_create dengan schedule_type yang sesuai. Tentukan jam, hari, dan payload sesuai konteks.
+- Untuk pengingat harga, isi payload.symbols dan payload.asset_types (misal: {"symbols": ["BTC", "gold"], "asset_types": ["crypto", "gold"]}).
+- Untuk pengingat berita, isi payload.query dengan topik pencarian yang relevan.
+- Untuk pengingat custom, isi payload.message dengan pesan yang diinginkan user.
+- Setiap user maksimal 10 pengingat aktif. Jika sudah penuh, sarankan hapus yang tidak diperlukan.
+- Jika user bertanya tentang kebiasaan keuangannya atau minta saran pengingat otomatis, panggil reminder_suggest_from_habits dulu, lalu tawarkan saran ke user. User harus konfirmasi sebelum pengingat dibuat."""
+
+SYSTEM_PROMPT = "\n\n".join([_ROLE, _TONE, _CONSTRAINTS, _LOCAL, _TOOLS, _REMINDERS])

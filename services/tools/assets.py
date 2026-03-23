@@ -7,11 +7,13 @@ from services.currency_rate import get_currency_rate
 from services.database import (
     delete_all_assets,
     delete_assets,
+    get_asset_rows,
     get_assets,
     get_asset,
     save_asset,
     update_asset,
 )
+from services.summaries import build_assets_summary, build_rebalance_suggestion
 
 SCHEMAS = [
     {
@@ -184,72 +186,6 @@ SCHEMAS = [
 ]
 
 
-def _build_summary(assets: list[dict]) -> dict:
-    """Aggregate by asset_type: total value and allocation %."""
-    total = sum(a["value"] for a in assets)
-    by_type: dict[str, float] = {}
-    for a in assets:
-        t = a["asset_type"]
-        by_type[t] = by_type.get(t, 0.0) + a["value"]
-    allocation = {
-        k: round(100.0 * v / total, 1) if total > 0 else 0.0
-        for k, v in by_type.items()
-    }
-    return {
-        "total_value": round(total, 2),
-        "by_type": {k: round(v, 2) for k, v in by_type.items()},
-        "allocation_percent": allocation,
-        "asset_count": len(assets),
-    }
-
-
-def _rebalance(
-    assets: list[dict],
-    target_allocation: dict[str, float],
-) -> dict:
-    """Compute current allocation and suggested move per type (IDR)."""
-    total = sum(a["value"] for a in assets)
-    by_type: dict[str, float] = {}
-    for a in assets:
-        t = a["asset_type"]
-        by_type[t] = by_type.get(t, 0.0) + a["value"]
-
-    current_pct = {
-        k: round(100.0 * v / total, 1) if total > 0 else 0.0
-        for k, v in by_type.items()
-    }
-    # Normalize target to sum 100
-    target_sum = sum(target_allocation.values()) or 100
-    target_norm = {
-        k: (v / target_sum * 100) if target_sum else 0
-        for k, v in target_allocation.items()
-    }
-    # All types that appear in current or target
-    all_types = set(by_type.keys()) | set(target_norm.keys())
-    suggestions = []
-    for t in sorted(all_types):
-        current_val = by_type.get(t, 0.0)
-        current_p = current_pct.get(t, 0.0)
-        target_p = target_norm.get(t, 0.0)
-        target_val = total * (target_p / 100.0) if total > 0 else 0.0
-        diff = target_val - current_val
-        suggestions.append({
-            "asset_type": t,
-            "current_value": round(current_val, 2),
-            "current_percent": current_p,
-            "target_percent": round(target_p, 1),
-            "target_value": round(target_val, 2),
-            "difference_idr": round(diff, 2),
-            "action": "beli" if diff > 0 else "jual" if diff < 0 else "pertahankan",
-        })
-    return {
-        "total_portfolio_value": round(total, 2),
-        "current_allocation_percent": current_pct,
-        "target_allocation_percent": target_norm,
-        "suggestions": suggestions,
-    }
-
-
 def _round_quantity_by_type(asset_type: str, qty: float) -> float:
     """Round quantity by asset type (stock/crypto/gold/silver/forex)."""
     at = (asset_type or "").strip().lower()
@@ -348,31 +284,26 @@ async def handle_asset_sell(arguments: dict[str, Any], user_id: int) -> str:
             {"tool": "asset_sell", "error": "quantity_sold must be positive"},
             ensure_ascii=False,
         )
-    # Get all lots of this asset (asset_type + name), FIFO by id
-    all_assets = await get_assets(user_id, asset_type=asset_type)
-    matching = [a for a in all_assets if (a.get("name") or "").strip().lower() == name.lower()]
-    matching.sort(key=lambda a: a["id"])
-    total_held = sum(a["quantity"] for a in matching)
+    rows = await get_asset_rows(user_id, asset_type, name)
+    total_held = sum(r.quantity for r in rows)
     if total_held <= 0:
         return json.dumps(
             {"tool": "asset_sell", "error": f"Tidak ada posisi {asset_type}/{name}."},
             ensure_ascii=False,
         )
-    # Deduct from lots (FIFO), update or remove each lot
     remaining_to_sell = quantity_sold
     lots_updated = 0
     lots_closed = 0
-    for a in matching:
+    for r in rows:
         if remaining_to_sell <= 0:
             break
-        qty = a["quantity"]
-        deduct = min(qty, remaining_to_sell)
+        deduct = min(r.quantity, remaining_to_sell)
         remaining_to_sell -= deduct
-        if deduct >= qty:
-            await delete_assets(user_id, [a["id"]])
+        if deduct >= r.quantity:
+            await delete_assets(user_id, [r.id])
             lots_closed += 1
         else:
-            await update_asset(user_id, a["id"], quantity=qty - deduct)
+            await update_asset(user_id, r.id, quantity=r.quantity - deduct)
             lots_updated += 1
     actual_sold = quantity_sold - remaining_to_sell
     payload = {
@@ -398,7 +329,7 @@ async def handle_get_assets(arguments: dict[str, Any], user_id: int) -> str:
 
 async def handle_get_assets_summary(arguments: dict[str, Any], user_id: int) -> str:
     assets = await get_assets(user_id)
-    summary = _build_summary(assets)
+    summary = build_assets_summary(assets)
     payload = {"summary": summary, "assets": assets}
     return json.dumps({"tool": "get_assets_summary", "data": payload}, ensure_ascii=False)
 
@@ -413,7 +344,7 @@ async def handle_rebalance_suggestion(arguments: dict[str, Any], user_id: int) -
     except (json.JSONDecodeError, ValueError):
         target = {}
     assets = await get_assets(user_id)
-    result = _rebalance(assets, target)
+    result = build_rebalance_suggestion(assets, target)
     return json.dumps(
         {"tool": "rebalance_suggestion", "data": result},
         ensure_ascii=False,
@@ -424,7 +355,7 @@ async def handle_delete_assets(arguments: dict[str, Any], user_id: int) -> str:
     asset_ids = arguments.get("asset_ids") or []
     asset_ids = [int(x) for x in asset_ids if isinstance(x, (int, float))]
     deleted = await delete_assets(user_id, asset_ids)
-    payload = {"asset_ids": asset_ids, "deleted_count": deleted}
+    payload = {"deleted_count": deleted}
     return json.dumps({"tool": "delete_assets", "data": payload}, ensure_ascii=False)
 
 

@@ -9,6 +9,7 @@ from services.database import (
     save_expense_record,
     save_income_record,
 )
+from services.summaries import build_records_summary
 from services.tools._helpers import parse_date
 
 SCHEMAS = [
@@ -215,55 +216,6 @@ def _build_record_confirm(
     }
 
 
-def _build_summary(records: list[dict], debts: list[dict]) -> dict[str, Any]:
-    total_income = total_expense = 0.0
-    per_category: dict[str, float] = {}
-
-    for r in records:
-        amt = float(r["amount"])
-        kind = r["type"]
-        cat = (r.get("category") or "").strip() or "Tanpa kategori"
-        per_category[cat] = per_category.get(cat, 0.0) + amt
-        if kind == "income":
-            total_income += amt
-        else:
-            total_expense += amt
-
-    total_lent = total_borrowed = 0.0
-    total_lent_settled = total_borrowed_settled = 0.0
-
-    for d in debts:
-        amt = float(d["amount"])
-        settled = d.get("is_settled", False)
-        if d["direction"] == "lent":
-            total_lent += amt
-            if settled:
-                total_lent_settled += amt
-        else:
-            total_borrowed += amt
-            if settled:
-                total_borrowed_settled += amt
-
-    lent_outstanding = total_lent - total_lent_settled
-    borrowed_outstanding = total_borrowed - total_borrowed_settled
-    # Lent = cash left pocket, borrowed = cash entered pocket
-    # Settled lent = cash returned, settled borrowed = cash paid back
-    total_balance = total_income - total_expense - lent_outstanding + borrowed_outstanding
-
-    return {
-        "total_income": total_income,
-        "total_expense": total_expense,
-        "total_balance": total_balance,
-        "per_category": per_category,
-        "record_count": len(records),
-        "total_lent": total_lent,
-        "total_lent_outstanding": lent_outstanding,
-        "total_borrowed": total_borrowed,
-        "total_borrowed_outstanding": borrowed_outstanding,
-        "debt_count": len(debts),
-    }
-
-
 def _parse_filters(arguments: dict[str, Any]) -> dict[str, Any]:
     return {
         "kind": (arguments.get("kind") or "").strip() or None,
@@ -339,7 +291,7 @@ async def handle_get_records_summary(arguments: dict[str, Any], user_id: int) ->
             "from_date": arguments.get("from_date"),
             "to_date": arguments.get("to_date"),
         },
-        "summary": _build_summary(records, debts),
+        "summary": build_records_summary(records, debts),
     }
     return json.dumps({"tool": "get_records_summary", "data": payload}, ensure_ascii=False)
 
@@ -361,7 +313,6 @@ async def handle_delete_records(arguments: dict[str, Any], user_id: int) -> str:
     )
     payload = {
         "filters": {
-            "record_ids": record_ids,
             "kind": kind,
             "category": category,
             "from_date": arguments.get("from_date"),

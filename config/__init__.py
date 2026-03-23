@@ -94,6 +94,14 @@ KB_MAX_UPLOAD_MB = int(os.environ.get("KB_MAX_UPLOAD_MB", "15"))
 KB_EMBED_BATCH_SIZE = int(os.environ.get("KB_EMBED_BATCH_SIZE", "32"))
 
 # -----------------------------------------------------------------------------
+# Reminders
+# -----------------------------------------------------------------------------
+REMINDER_ENABLED = os.environ.get("REMINDER_ENABLED", "true").lower() in ("true", "1", "yes")
+REMINDER_MAX_PER_USER = int(os.environ.get("REMINDER_MAX_PER_USER", "10"))
+REMINDER_MAX_SENDS_PER_DAY = int(os.environ.get("REMINDER_MAX_SENDS_PER_DAY", "15"))
+REMINDER_TICK_SECONDS = int(os.environ.get("REMINDER_TICK_SECONDS", "30"))
+
+# -----------------------------------------------------------------------------
 # Admin HTTP Basic Auth (set both to protect the dashboard)
 # -----------------------------------------------------------------------------
 ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "")

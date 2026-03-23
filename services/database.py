@@ -140,7 +140,6 @@ async def get_records(
 
     return [
         {
-            "id": r.id,
             "type": r.kind,
             "amount": r.amount,
             "description": r.description,
@@ -224,7 +223,6 @@ async def get_debts(
 
     return [
         {
-            "id": d.id,
             "direction": d.direction,
             "person": d.person,
             "amount": d.amount,
@@ -293,7 +291,6 @@ async def save_asset(
 
 def _asset_to_dict(a: Asset) -> dict:
     return {
-        "id": a.id,
         "asset_type": a.asset_type,
         "name": a.name,
         "quantity": a.quantity,
@@ -321,6 +318,26 @@ async def get_assets(
         result = await session.execute(stmt)
         rows = result.scalars().all()
     return [_asset_to_dict(r) for r in rows]
+
+
+async def get_asset_rows(
+    user_id: int,
+    asset_type: str,
+    name: str,
+) -> list[Asset]:
+    """Return raw Asset ORM objects matching (user, type, name), ordered by id (FIFO)."""
+    async with AsyncSessionMaker() as session:
+        stmt = (
+            select(Asset)
+            .where(
+                Asset.user_id == user_id,
+                func.lower(Asset.asset_type) == asset_type.strip().lower(),
+                func.lower(Asset.name) == name.strip().lower(),
+            )
+            .order_by(Asset.id.asc())
+        )
+        result = await session.execute(stmt)
+        return list(result.scalars().all())
 
 
 async def get_asset_by_id(user_id: int, asset_id: int) -> Asset | None:
