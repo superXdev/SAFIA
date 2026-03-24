@@ -25,3 +25,6 @@ dependencies = [
 dev = [
     "watchfiles>=1.1.1",
 ]
+prod = [
+    "gunicorn>=23.0.0",
+]
