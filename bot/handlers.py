@@ -3,6 +3,7 @@ import tempfile
 from pathlib import Path
 
 from aiogram import F, Dispatcher
+from aiogram.filters import Command
 from aiogram.types import Message
 from aiogram.enums import ParseMode
 
@@ -34,14 +35,33 @@ async def handle_start(message: Message) -> None:
     name_part = f" {first_name}" if first_name else ""
 
     text = (
-        f"Halo{name_part}! Aku *SAFIA*, asisten keuangan pribadi dan manajer kekayaan kamu. \n\n"
-        "- Bantu catat pemasukan/pengeluaran harian.\n"
-        "- Bantu catat dan rebalance aset (saham, emas, crypto, dll).\n"
-        "- Bantu review kebiasaan belanja biar nggak boncos.\n"
-        "- Jelasin konsep keuangan/investasi pakai referensi regulasi & berita yang kredibel.\n\n"
-        "Tinggal ceritakan kondisi keuangan atau pertanyaan kamu, aku bantu pilihin langkah yang paling masuk akal. 🙂"
+        f"Halo{name_part}! Aku *SAFIA*, teman chat untuk urusan *uang kamu*.\n\n"
+        "*Bisa apa?*\n"
+        "• Catat pemasukan, pengeluaran, dan investasi (saham, emas, crypto, dll.)\n"
+        "• Tanya *harga* atau *kurs* (contoh: emas hari ini, Bitcoin, dollar ke rupiah)\n"
+        "• Bantu *hutang*, tabungan, tanya seputar berita/edukasi uang, sampai *pengingat* rutin\n\n"
+        "*Gimana pakainya?* Ketik teks, kirim suara, atau foto struk/slip yang jelas.\n\n"
+        "/start = mulai ulang dari awal\n"
+        "/bantuan = info singkat & batas pemakaian\n\n"
+        "Ada pertanyaan atau mau cerita? Langsung kirim saja 🙂"
     )
 
+    await message.answer(text, parse_mode=ParseMode.MARKDOWN)
+
+
+async def handle_bantuan(message: Message) -> None:
+    text = (
+        "*Bantuan SAFIA*\n\n"
+        "*Perintah*\n"
+        "/start — mulai ulang percakapan\n"
+        "/bantuan — pesan ini\n\n"
+        "*Kirim pesan*\n"
+        "• *Teks* — tanya atau cerita soal uang, investasi, harga, kurs, dll.\n"
+        "• *Suara* — direkam jadi teks, lalu dibalas seperti chat biasa\n"
+        "• *Foto* — struk atau slip yang jelas (aku bantu baca isinya)\n\n"
+        "*Batas:* maksimal *25 pesan per hari* per akun (reset tiap hari).\n\n"
+        "*Tip:* tulis jumlah uang dan tanggal dengan jelas supaya catatan tepat."
+    )
     await message.answer(text, parse_mode=ParseMode.MARKDOWN)
 
 
@@ -165,6 +185,7 @@ async def handle_photo(message: Message) -> None:
 
 def register_handlers(dp: Dispatcher) -> None:
     dp.message.register(handle_start, F.text == "/start")
+    dp.message.register(handle_bantuan, Command("bantuan"))
     dp.message.register(handle_voice, F.voice)
     dp.message.register(handle_photo, F.photo)
     dp.message.register(handle_message, F.text)

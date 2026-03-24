@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from aiogram import Bot, Dispatcher
+from aiogram.types import BotCommand
 
 from config import REMINDER_ENABLED, TELEGRAM_BOT_TOKEN
 from bot.handlers import register_handlers
@@ -20,6 +21,13 @@ async def main() -> None:
     bot = Bot(token=TELEGRAM_BOT_TOKEN)
     dp = Dispatcher()
     register_handlers(dp)
+
+    await bot.set_my_commands(
+        [
+            BotCommand(command="start", description="Mulai / reset percakapan"),
+            BotCommand(command="bantuan", description="Bantuan & cara pakai"),
+        ]
+    )
 
     logging.info("Starting SAFIA bot...")
     reminder_task = None
