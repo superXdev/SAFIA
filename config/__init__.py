@@ -90,7 +90,7 @@ EMBEDDING_VECTOR_SIZE = int(os.environ.get("EMBEDDING_VECTOR_SIZE", "1536"))
 KB_CHUNK_WORDS = int(os.environ.get("KB_CHUNK_WORDS", "450"))
 KB_CHUNK_OVERLAP_WORDS = int(os.environ.get("KB_CHUNK_OVERLAP_WORDS", "70"))
 KB_UPLOAD_DIR = os.environ.get("KB_UPLOAD_DIR", "data/kb_uploads")
-KB_MAX_UPLOAD_MB = int(os.environ.get("KB_MAX_UPLOAD_MB", "15"))
+KB_MAX_UPLOAD_MB = int(os.environ.get("KB_MAX_UPLOAD_MB", "200"))
 KB_EMBED_BATCH_SIZE = int(os.environ.get("KB_EMBED_BATCH_SIZE", "32"))
 
 # -----------------------------------------------------------------------------
