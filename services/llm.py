@@ -3,6 +3,7 @@ import json
 import logging
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import Awaitable, Callable
 
 from openai import AsyncOpenAI
 
@@ -41,6 +42,25 @@ _REMINDER_KIND_LABEL_ID: dict[str, str] = {
     "portfolio_digest": "pengingat ringkasan portofolio",
     "custom": "pengingat kustom",
 }
+
+_EXTERNAL_TOOL_STATUS_TEXT: dict[str, str] = {
+    "news_search_macro": "Mencari berita terbaru...",
+    "knowledge_search": "Mencari referensi dokumen...",
+    "get_stock_price": "Mengambil harga saham...",
+    "get_forex_price": "Mengambil kurs forex...",
+    "get_crypto_price": "Mengambil harga crypto...",
+    "get_top_crypto_market_cap": "Mengambil data market crypto...",
+    "get_coin_detail": "Mengambil detail aset crypto...",
+    "get_trending_crypto": "Mengambil tren crypto...",
+    "search_crypto": "Mencari aset crypto...",
+    "get_gold_price": "Mengambil harga emas...",
+    "get_silver_price": "Mengambil harga perak...",
+    "get_currency_rate": "Mengambil kurs mata uang...",
+}
+
+
+def _tool_status_text(tool_name: str) -> str:
+    return _EXTERNAL_TOOL_STATUS_TEXT.get(tool_name, "Memproses data...")
 
 
 def get_client() -> AsyncOpenAI:
@@ -109,7 +129,11 @@ async def transcribe(audio_path: Path) -> str:
         return ""
 
 
-async def chat(messages: list[dict], user_id: int) -> str:
+async def chat(
+    messages: list[dict],
+    user_id: int,
+    status_callback: Callable[[str], Awaitable[None]] | None = None,
+) -> str:
     """Send messages to LLM; run tools if requested; return final assistant reply."""
     try:
         client = get_client()
@@ -148,8 +172,14 @@ async def chat(messages: list[dict], user_id: int) -> str:
                 return msg.content or "..."
 
             current.append(msg)
+            last_status: str | None = None
             for tc in msg.tool_calls:
                 name = tc.function.name
+                if status_callback:
+                    status = _tool_status_text(name)
+                    if status != last_status:
+                        await status_callback(status)
+                        last_status = status
                 args = json.loads(tc.function.arguments or "{}")
                 result = await run_tool(name, args, user_id)
                 current.append(

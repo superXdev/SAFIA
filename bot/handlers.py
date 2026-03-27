@@ -1,6 +1,8 @@
 """Telegram message handlers."""
 import tempfile
 from pathlib import Path
+from time import monotonic
+from typing import Awaitable, Callable
 
 from aiogram import F, Dispatcher
 from aiogram.filters import Command
@@ -17,6 +19,28 @@ from services.chat_history import (
 from services.database import get_or_create_user
 from services.document_vision import extract_document_text, parse_final_amount
 from config import OPENROUTER_API_KEY
+
+
+def _build_status_updater(progress_message: Message) -> Callable[[str], Awaitable[None]]:
+    last_text = ""
+    last_at = 0.0
+
+    async def _update(text: str) -> None:
+        nonlocal last_text, last_at
+        now = monotonic()
+        if not text or text == last_text:
+            return
+        # avoid rapid edit bursts when multiple tools run quickly
+        if now - last_at < 0.8:
+            return
+        try:
+            await progress_message.edit_text(text, parse_mode=ParseMode.MARKDOWN)
+            last_text = text
+            last_at = now
+        except Exception:
+            return
+
+    return _update
 
 
 async def handle_start(message: Message) -> None:
@@ -79,7 +103,11 @@ async def handle_message(message: Message) -> None:
     history.append({"role": "user", "content": message.text or ""})
 
     typing = await message.answer("Berpikir...", parse_mode=ParseMode.MARKDOWN)
-    reply = await llm_chat(history, message.from_user.id)
+    reply = await llm_chat(
+        history,
+        message.from_user.id,
+        status_callback=_build_status_updater(typing),
+    )
     history.append({"role": "assistant", "content": reply})
     await save_history(message.chat.id, history)
 
@@ -119,7 +147,11 @@ async def handle_voice(message: Message) -> None:
     history.append({"role": "user", "content": text})
 
     await typing.edit_text("Berpikir...", parse_mode=ParseMode.MARKDOWN)
-    reply = await llm_chat(history, message.from_user.id)
+    reply = await llm_chat(
+        history,
+        message.from_user.id,
+        status_callback=_build_status_updater(typing),
+    )
     history.append({"role": "assistant", "content": reply})
     await save_history(message.chat.id, history)
 
@@ -176,7 +208,11 @@ async def handle_photo(message: Message) -> None:
     history.append({"role": "user", "content": user_context})
 
     await typing.edit_text("Berpikir...", parse_mode=ParseMode.MARKDOWN)
-    reply = await llm_chat(history, message.from_user.id if message.from_user else 0)
+    reply = await llm_chat(
+        history,
+        message.from_user.id if message.from_user else 0,
+        status_callback=_build_status_updater(typing),
+    )
     history.append({"role": "assistant", "content": reply})
     await save_history(message.chat.id, history)
 
