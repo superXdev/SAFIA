@@ -23,7 +23,8 @@ SCHEMAS = [
                 "price (cek harga aset), news (cari berita keuangan), "
                 "note_expense/note_income (pengingat catat pengeluaran/pemasukan), "
                 "portfolio_digest (ringkasan portofolio), custom (pesan kustom). "
-                "Frekuensi: daily, weekly, monthly, atau interval (jam)."
+                "Frekuensi: daily, weekly, monthly, atau interval. "
+                "Untuk interval gunakan interval_hours (jam, boleh desimal: 0.5 = 30 menit)."
             ),
             "parameters": {
                 "type": "object",
@@ -64,8 +65,11 @@ SCHEMAS = [
                         "description": "Tanggal (untuk monthly): 1-28.",
                     },
                     "interval_hours": {
-                        "type": ["integer", "null"],
-                        "description": "Interval dalam jam (untuk tipe interval).",
+                        "type": ["number", "null"],
+                        "description": (
+                            "Interval dalam jam (wajib jika schedule_type=interval). "
+                            "Boleh desimal, contoh: 1, 0.5 (30 menit), 0.25 (15 menit). Min ~0.017 (~1 menit)."
+                        ),
                     },
                     "payload": {
                         "type": ["object", "null"],
@@ -170,7 +174,10 @@ def _build_schedule_json(arguments: dict[str, Any]) -> str:
     elif schedule_type == "monthly":
         schedule["day_of_month"] = int(arguments.get("day_of_month") or 1)
     elif schedule_type == "interval":
-        schedule["hours"] = int(arguments.get("interval_hours") or 24)
+        raw = arguments.get("interval_hours")
+        hours = float(raw) if raw is not None else 24.0
+        # min 1 minute to avoid zero/negative; aligns with reminder tick granularity
+        schedule["hours"] = max(1.0 / 60.0, hours)
     return json.dumps(schedule)
 
 

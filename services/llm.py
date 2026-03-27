@@ -19,6 +19,29 @@ MAX_TOOL_ROUNDS = 5
 # WIB = UTC+7
 WIB = timezone(timedelta(hours=7))
 
+REMINDER_POLISH_MAX_INPUT_CHARS = 4000
+REMINDER_POLISH_MAX_OUTPUT_TOKENS = 380
+
+_REMINDER_POLISH_SYSTEM = """Kamu adalah SAFIA — asisten keuangan di Telegram (Bahasa Indonesia).
+Tugas: ubah "isi mentah pengingat" jadi satu pesan singkat untuk user.
+
+Aturan:
+- Santai dan natural, 2–5 kalimat ATAU paling banyak 6 bullet (• atau -), satu ide per baris.
+- Jangan ulang heading kaku seperti template; boleh satu **label** pendek di awal jika perlu.
+- Pertahankan angka, harga, simbol, dan fakta dari isi mentah. Jangan tambah janji imbal hasil atau saran investasi baru.
+- **Format angka**: Rupiah pakai titik ribuan (Rp 1.500.000). USD tetap gaya internasional ($67,350). Crypto kecil boleh desimal panjang (0,00045 BTC). Persen dua desimal (12,50%).
+- Tanpa tabel Markdown (|). Tanpa # heading. Tanpa boilerplate "Hai" panjang.
+- Hanya keluarkan teks pesan siap kirim, tanpa penjelasan di luar pesan."""
+
+_REMINDER_KIND_LABEL_ID: dict[str, str] = {
+    "price": "pengingat cek harga aset",
+    "news": "pengingat ringkasan berita",
+    "note_expense": "pengingat catat pengeluaran",
+    "note_income": "pengingat catat pemasukan",
+    "portfolio_digest": "pengingat ringkasan portofolio",
+    "custom": "pengingat kustom",
+}
+
 
 def get_client() -> AsyncOpenAI:
     global _client
@@ -32,6 +55,42 @@ def get_groq_client() -> AsyncOpenAI:
     if _groq_client is None:
         _groq_client = AsyncOpenAI(base_url="https://api.groq.com/openai/v1", api_key=GROQ_API_KEY)
     return _groq_client
+
+
+async def polish_reminder_message(draft: str, *, kind: str, title: str = "") -> str:
+    """Rewrite reminder draft text to be short and natural for Telegram. No tools."""
+    text = (draft or "").strip()
+    if not text:
+        return text
+    if not GROQ_API_KEY:
+        return text
+
+    if len(text) > REMINDER_POLISH_MAX_INPUT_CHARS:
+        text = text[: REMINDER_POLISH_MAX_INPUT_CHARS].rstrip() + "\n…"
+
+    kind_label = _REMINDER_KIND_LABEL_ID.get(kind, kind)
+    user_content = (
+        f"Jenis: {kind_label}\n"
+        f"Judul pengingat: {title or '-'}\n\n"
+        f"Isi mentah:\n{text}"
+    )
+
+    try:
+        client = get_client()
+        response = await client.chat.completions.create(
+            model=MODEL,
+            messages=[
+                {"role": "system", "content": _REMINDER_POLISH_SYSTEM},
+                {"role": "user", "content": user_content},
+            ],
+            max_tokens=REMINDER_POLISH_MAX_OUTPUT_TOKENS,
+            temperature=0.55,
+        )
+        out = (response.choices[0].message.content or "").strip()
+        return out if out else draft
+    except Exception:
+        logging.exception("polish_reminder_message failed")
+        return draft
 
 
 async def transcribe(audio_path: Path) -> str:

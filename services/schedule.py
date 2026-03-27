@@ -15,7 +15,7 @@ def compute_next_run(
     - daily:    {"type": "daily",   "hour": 8, "minute": 0}
     - weekly:   {"type": "weekly",  "day": "monday", "hour": 8, "minute": 0}
     - monthly:  {"type": "monthly", "day_of_month": 1, "hour": 8, "minute": 0}
-    - interval: {"type": "interval", "hours": 12}
+    - interval: {"type": "interval", "hours": 12}  # hours may be fractional (e.g. 0.5 = 30 min)
     """
     schedule = json.loads(schedule_json)
     try:
@@ -62,7 +62,11 @@ def compute_next_run(
         return candidate.astimezone(timezone.utc)
 
     if stype == "interval":
-        hours = max(1, int(schedule.get("hours", 24)))
+        try:
+            hours = float(schedule.get("hours", 24))
+        except (TypeError, ValueError):
+            hours = 24.0
+        hours = max(1.0 / 60.0, hours)
         return now_utc + timedelta(hours=hours)
 
     # Fallback

@@ -7,8 +7,10 @@ import logging
 from typing import TYPE_CHECKING
 
 from aiogram.enums import ParseMode
+from aiogram.exceptions import TelegramBadRequest
 
 from config import REMINDER_TICK_SECONDS
+from services.llm import polish_reminder_message
 from services.reminders_db import (
     get_due_reminders,
     increment_reminder_fail_count,
@@ -19,6 +21,11 @@ from services.schedule import compute_next_run
 if TYPE_CHECKING:
     from aiogram import Bot
     from services.models import Reminder
+
+
+def _fmt_idr(value: int | float) -> str:
+    """Format number as Indonesian Rupiah (dot thousands, e.g. Rp 1.500.000)."""
+    return f"Rp {value:,.0f}".replace(",", ".")
 
 
 async def _handle_price_reminder(payload: dict) -> str:
@@ -38,24 +45,30 @@ async def _handle_price_reminder(payload: dict) -> str:
                 rows = await asyncio.to_thread(fetch_gold_price_idr)
                 for r in rows:
                     if "gram" in (r.get("unit") or "").lower():
-                        lines.append(f"• Emas: Rp {r['idr']:,.0f}/gram")
+                        lines.append(f"• Emas: {_fmt_idr(r['idr'])}/gram")
                         break
             elif atype == "silver":
                 data = await asyncio.to_thread(fetch_silver_price_idr)
                 val = data.get("idr_per_gram", 0)
                 if val:
-                    lines.append(f"• Perak: Rp {val:,.0f}/gram")
+                    lines.append(f"• Perak: {_fmt_idr(val)}/gram")
             elif atype == "crypto":
                 result = await asyncio.to_thread(get_crypto_price, symbol=sym, limit=1)
                 rows = result.get("data") or []
                 if rows:
-                    price = rows[0].get("Price_IDR") or rows[0].get("Price")
-                    lines.append(f"• {sym}: {price}")
+                    price_idr = rows[0].get("Price_IDR")
+                    price_usd = rows[0].get("Price")
+                    if isinstance(price_idr, (int, float)):
+                        lines.append(f"• {sym}: {_fmt_idr(price_idr)}")
+                    elif isinstance(price_usd, (int, float)):
+                        lines.append(f"• {sym}: ${price_usd:,.2f}")
+                    else:
+                        lines.append(f"• {sym}: {price_idr or price_usd}")
             elif atype == "stock":
                 rows = await asyncio.to_thread(get_stock_price_indonesia, query=sym, limit=1)
                 if rows:
                     p = rows[0].get("Price", "N/A")
-                    lines.append(f"• {sym}: Rp {p:,}" if isinstance(p, (int, float)) else f"• {sym}: {p}")
+                    lines.append(f"• {sym}: {_fmt_idr(p)}" if isinstance(p, (int, float)) else f"• {sym}: {p}")
         except Exception:
             lines.append(f"• {sym}: gagal ambil harga")
 
@@ -90,7 +103,7 @@ async def _handle_portfolio_reminder(user_id: int) -> str:
     alloc = summary.get("allocation_percent", {})
     lines = [
         "**Ringkasan Portofolio**",
-        f"Total nilai: Rp {total:,.0f}",
+        f"Total nilai: {_fmt_idr(total)}",
     ]
     for atype, pct in alloc.items():
         lines.append(f"• {atype}: {pct}%")
@@ -122,11 +135,22 @@ async def _process_due_reminders(bot: Bot) -> None:
         try:
             message = await _execute_reminder(reminder)
             if message:
-                await bot.send_message(
-                    chat_id=reminder.user_id,
-                    text=message,
-                    parse_mode=ParseMode.MARKDOWN,
+                message = await polish_reminder_message(
+                    message,
+                    kind=reminder.kind,
+                    title=reminder.title or "",
                 )
+                try:
+                    await bot.send_message(
+                        chat_id=reminder.user_id,
+                        text=message,
+                        parse_mode=ParseMode.MARKDOWN,
+                    )
+                except TelegramBadRequest:
+                    await bot.send_message(
+                        chat_id=reminder.user_id,
+                        text=message,
+                    )
             next_run = compute_next_run(reminder.schedule, reminder.timezone)
             await mark_reminder_fired(reminder.id, next_run)
         except Exception:
