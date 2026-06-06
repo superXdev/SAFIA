@@ -1,12 +1,13 @@
-"""Extract key text from document images (invoice, note, salary slip) via OpenRouter vision."""
+"""Extract key text from document images (invoice, note, salary slip) via LLM vision."""
 import base64
 import logging
 import re
 from pathlib import Path
 
+import httpx
 from openai import AsyncOpenAI
 
-from config import VISION_MODEL, OPENROUTER_API_KEY
+from config import LLM_CHAT_API_KEY, LLM_CHAT_BASE_URL, VISION_MODEL
 
 DOCUMENT_EXTRACT_SYSTEM = (
     "You are a document OCR assistant for financial documents. Extract key text and "
@@ -27,18 +28,27 @@ DOCUMENT_EXTRACT_SYSTEM = (
 _vision_client: AsyncOpenAI | None = None
 
 
+class _SafeTransport(httpx.AsyncHTTPTransport):
+    """Transport that neutralizes headers blocked by certain AI providers (e.g. Lunos)."""
+
+    async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
+        request.headers["user-agent"] = "SAFIA/1.0"
+        request.headers.pop("accept", None)
+        return await super().handle_async_request(request)
+
+
 def _get_vision_client() -> AsyncOpenAI | None:
-    if not OPENROUTER_API_KEY:
+    if not LLM_CHAT_API_KEY:
         return None
     global _vision_client
     if _vision_client is None:
         _vision_client = AsyncOpenAI(
-            base_url="https://openrouter.ai/api/v1",
-            api_key=OPENROUTER_API_KEY,
-            default_headers={
-                "HTTP-Referer": "https://github.com/superxdev",
-                "X-OpenRouter-Title": "SAFIA",
-            },
+            base_url=LLM_CHAT_BASE_URL,
+            api_key=LLM_CHAT_API_KEY,
+            http_client=httpx.AsyncClient(
+                transport=_SafeTransport(),
+                timeout=httpx.Timeout(600.0, connect=10.0),
+            ),
         )
     return _vision_client
 
@@ -53,8 +63,8 @@ def _encode_image_to_base64(path: Path) -> str:
 
 async def extract_document_text(image_path: Path) -> str:
     """
-    Send image to OpenRouter vision model and return extracted key text.
-    Returns empty string if OpenRouter is not configured or request fails.
+    Send image to vision model and return extracted key text.
+    Returns empty string if the provider is not configured or request fails.
     """
     client = _get_vision_client()
     if not client:
@@ -80,11 +90,6 @@ async def extract_document_text(image_path: Path) -> str:
                     ],
                 },
             ],
-            extra_body={
-                "provider": {
-                    "order": ["google-ai-studio", "google-vertex/global"]
-                },
-            },
         )
         text = (response.choices[0].message.content or "").strip()
         return text

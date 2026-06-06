@@ -1,7 +1,9 @@
 """Async SQLAlchemy setup and simple helpers."""
 from __future__ import annotations
 
-from datetime import date, timedelta
+import os
+from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
 
 from sqlalchemy import Boolean, DateTime, Float, Integer, String, delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -10,9 +12,14 @@ from config import DATABASE_URL
 from services.models import Asset, Base, DailyMetrics, Debt, KnowledgeDocument, Record, User
 
 
+_engine_kwargs = {}
+if DATABASE_URL.startswith("sqlite"):
+    _engine_kwargs["connect_args"] = {"check_same_thread": False}
+
 engine = create_async_engine(
     DATABASE_URL,
     echo=False,
+    **_engine_kwargs,
 )
 
 AsyncSessionMaker = async_sessionmaker(
@@ -29,8 +36,13 @@ async def get_session() -> AsyncSession:
 
 
 async def init_db() -> None:
-    """Create all tables (run at startup)."""
+    """Create all tables (run at startup). Also ensures the data directory exists for SQLite."""
+    if DATABASE_URL.startswith("sqlite"):
+        db_path = DATABASE_URL.replace("sqlite+aiosqlite:///", "")
+        Path(db_path).parent.mkdir(parents=True, exist_ok=True)
     async with engine.begin() as conn:
+        if DATABASE_URL.startswith("sqlite"):
+            await conn.run_sync(lambda c: c.exec_driver_sql("PRAGMA journal_mode=WAL"))
         await conn.run_sync(Base.metadata.create_all)
 
 
@@ -400,6 +412,7 @@ async def update_asset(
             asset.unit_value = unit_value
         if notes is not None:
             asset.notes = notes.strip() or ""
+        asset.updated_at = datetime.now(timezone.utc)
         await session.commit()
         return True
 

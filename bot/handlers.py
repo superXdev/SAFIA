@@ -18,7 +18,7 @@ from services.chat_history import (
 )
 from services.database import get_or_create_user
 from services.document_vision import extract_document_text, parse_final_amount
-from config import OPENROUTER_API_KEY
+from config import LLM_CHAT_API_KEY
 
 
 def _build_status_updater(progress_message: Message) -> Callable[[str], Awaitable[None]]:
@@ -159,7 +159,7 @@ async def handle_voice(message: Message) -> None:
 
 
 async def handle_photo(message: Message) -> None:
-    if not OPENROUTER_API_KEY:
+    if not LLM_CHAT_API_KEY:
         await message.answer(
             "Fitur foto dokumen belum diaktifkan. Hubungi admin.",
             parse_mode=ParseMode.MARKDOWN,

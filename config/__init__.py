@@ -10,16 +10,42 @@ from config.prompt import SYSTEM_PROMPT
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 
 # -----------------------------------------------------------------------------
-# LLM (Groq)
+# AI Provider (Lunos / Groq / OpenAI / custom)
 # -----------------------------------------------------------------------------
-OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
-MODEL = "openai/gpt-oss-120b"
+# LLM_PROVIDER: lunos (default), groq, openai, or custom
+# For backward compat: if only GROQ_API_KEY is set without LLM_PROVIDER, default to groq.
+_LLM_PROVIDER_EXPLICIT = "LLM_PROVIDER" in os.environ
+LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "lunos")
+LLM_API_KEY = os.environ.get("LLM_API_KEY", "")
+LLM_BASE_URL = os.environ.get("LLM_BASE_URL", "")  # only for custom provider
+LLM_MODEL = os.environ.get("LLM_MODEL", "openai/gpt-oss-120b")
+
+# Legacy keys (kept for backward compat and Whisper)
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
+
+# If user has GROQ_API_KEY but no explicit LLM_PROVIDER or LLM_API_KEY, stay on groq
+if not _LLM_PROVIDER_EXPLICIT and GROQ_API_KEY and not LLM_API_KEY:
+    LLM_PROVIDER = "groq"
+
+# Resolve effective chat base URL
+if LLM_PROVIDER == "lunos":
+    LLM_CHAT_BASE_URL = "https://api.lunosrouter.com/v1"
+elif LLM_PROVIDER == "groq":
+    LLM_CHAT_BASE_URL = "https://api.groq.com/openai/v1"
+elif LLM_PROVIDER == "openai":
+    LLM_CHAT_BASE_URL = "https://api.openai.com/v1"
+else:
+    LLM_CHAT_BASE_URL = LLM_BASE_URL
+
+# Effective chat API key (unified key, falls back to GROQ_API_KEY)
+LLM_CHAT_API_KEY = LLM_API_KEY or GROQ_API_KEY
 
 # -----------------------------------------------------------------------------
-# Document vision — optional, for photo/document extraction
+# Document vision — optional, for photo/document extraction.
+# Uses the same LLM provider as chat (LLM_CHAT_BASE_URL + LLM_CHAT_API_KEY).
 # -----------------------------------------------------------------------------
-VISION_MODEL = "openai/gpt-5-mini"
+VISION_MODEL = os.environ.get("VISION_MODEL", "mistralai/mistral-small-3.2-24b-instruct")
 
 # -----------------------------------------------------------------------------
 # Redis
@@ -65,8 +91,9 @@ RATE_LIMIT_KEY_PREFIX = "safia:rate:"
 # -----------------------------------------------------------------------------
 # Database
 # -----------------------------------------------------------------------------
-# Example: postgresql+asyncpg://user:password@localhost:5432/safia
-DATABASE_URL = os.environ.get("DATABASE_URL", "")
+# Database — defaults to SQLite at data/safia.db (zero-config).
+# For PostgreSQL: postgresql+asyncpg://user:pass@host:5432/safia
+DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite+aiosqlite:///data/safia.db")
 
 # -----------------------------------------------------------------------------
 # Qdrant (knowledge base vectors)

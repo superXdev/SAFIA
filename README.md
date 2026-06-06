@@ -2,7 +2,7 @@
 
 Personal finance AI assistant on Telegram, built for Indonesian users. Tracks expenses, manages investment portfolios, and provides financial education — all in casual Bahasa Indonesia.
 
-Built with [aiogram 3](https://docs.aiogram.dev/), [Groq](https://groq.com/), and PostgreSQL.
+Built with [aiogram 3](https://docs.aiogram.dev/), [Lunos](https://lunosrouter.com), and SQLite / PostgreSQL.
 
 ## Features
 
@@ -22,19 +22,26 @@ Built with [aiogram 3](https://docs.aiogram.dev/), [Groq](https://groq.com/), an
 
 ## Setup
 
-1. Install dependencies:
+1. Install dependencies and run the setup wizard:
 
    ```bash
    uv sync
+   uv run python scripts/setup.py
    ```
 
-2. Create a `.env` file:
+   The wizard will guide you through:
+   - AI provider selection (Lunos, Groq, OpenAI, or custom)
+   - Telegram bot token
+   - Database and Redis configuration
+   - Optional admin dashboard credentials
+
+2. Or create a `.env` file manually:
 
    ```
    TELEGRAM_BOT_TOKEN=your-telegram-bot-token
-   GROQ_API_KEY=your-groq-api-key
-   OPENROUTER_API_KEY=your-openrouter-api-key
-   DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/safia
+   LLM_PROVIDER=lunos
+   LLM_API_KEY=your-lunos-api-key
+   DATABASE_URL=sqlite+aiosqlite:///data/safia.db
    SERPAPI_KEY=your-serpapi-key
    REMINDER_ENABLED=true
    REMINDER_MAX_PER_USER=10
@@ -112,10 +119,10 @@ Reliability notes:
 | Component       | Technology                          |
 |-----------------|-------------------------------------|
 | Bot framework   | aiogram 3.x                        |
-| LLM             | Groq (OpenAI-compatible API)        |
-| Vision          | OpenRouter                          |
+| LLM             | Lunos / Groq / OpenAI / Custom (OpenAI-compatible API) |
+| Vision          | LLM provider (same as chat)       |
 | Speech-to-text  | Whisper (via Groq)                  |
-| Database        | PostgreSQL + SQLAlchemy (async)     |
+| Database        | SQLite / PostgreSQL + SQLAlchemy (async) |
 | Cache / rate limit | Redis                            |
 | Admin UI        | Flask + Chart.js                    |
 | Knowledge RAG   | Qdrant + OpenAI-compatible embeddings |

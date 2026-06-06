@@ -5,9 +5,10 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Awaitable, Callable
 
+import httpx
 from openai import AsyncOpenAI
 
-from config import GROQ_API_KEY, MODEL
+from config import GROQ_API_KEY, LLM_CHAT_API_KEY, LLM_CHAT_BASE_URL, LLM_MODEL as MODEL
 from services.chat_history import mark_user_active_today
 from services.database import increment_daily_metrics
 from services.tools import TOOLS, run_tool
@@ -16,6 +17,23 @@ _client: AsyncOpenAI | None = None
 _groq_client: AsyncOpenAI | None = None
 
 MAX_TOOL_ROUNDS = 5
+
+
+class _SafeTransport(httpx.AsyncHTTPTransport):
+    """Transport that neutralizes headers blocked by certain AI providers (e.g. Lunos)."""
+
+    async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
+        # Lunos blocks requests carrying OpenAI SDK's default UA and Accept headers.
+        request.headers["user-agent"] = "SAFIA/1.0"
+        request.headers.pop("accept", None)
+        return await super().handle_async_request(request)
+
+
+def _make_httpx_client() -> httpx.AsyncClient:
+    return httpx.AsyncClient(
+        transport=_SafeTransport(),
+        timeout=httpx.Timeout(600.0, connect=10.0),
+    )
 
 # WIB = UTC+7
 WIB = timezone(timedelta(hours=7))
@@ -66,11 +84,16 @@ def _tool_status_text(tool_name: str) -> str:
 def get_client() -> AsyncOpenAI:
     global _client
     if _client is None:
-        _client = AsyncOpenAI(base_url="https://api.groq.com/openai/v1", api_key=GROQ_API_KEY)
+        _client = AsyncOpenAI(
+            base_url=LLM_CHAT_BASE_URL,
+            api_key=LLM_CHAT_API_KEY,
+            http_client=_make_httpx_client(),
+        )
     return _client
 
 
 def get_groq_client() -> AsyncOpenAI:
+    """Whisper transcription client — always uses Groq (requires GROQ_API_KEY)."""
     global _groq_client
     if _groq_client is None:
         _groq_client = AsyncOpenAI(base_url="https://api.groq.com/openai/v1", api_key=GROQ_API_KEY)
@@ -82,7 +105,7 @@ async def polish_reminder_message(draft: str, *, kind: str, title: str = "") -> 
     text = (draft or "").strip()
     if not text:
         return text
-    if not GROQ_API_KEY:
+    if not LLM_CHAT_API_KEY:
         return text
 
     if len(text) > REMINDER_POLISH_MAX_INPUT_CHARS:
