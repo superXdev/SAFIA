@@ -20,9 +20,18 @@ uv run python admin_dashboard.py
 
 # Production admin dashboard (gunicorn)
 ./scripts/start_admin_dashboard_prod.sh
+
+# Run tests (must pass after any mid or big change)
+uv run pytest tests/ -v
 ```
 
-No tests, linter, formatter, or typechecker are configured.
+## Testing rules
+
+- **Run tests after every mid or big change.** Command: `uv run pytest tests/ -v`
+- Tests cover pure functions: summaries, schedule computation, helpers, tool builders, and config integrity.
+- 89 tests across 5 files: `tests/test_config.py`, `tests/test_helpers.py`, `tests/test_schedule.py`, `tests/test_summaries.py`, `tests/test_tool_builders.py`.
+- When adding new features, add corresponding tests for any new pure helper/builder functions.
+- Database/network-dependent functions are not yet tested (requires mocking infrastructure).
 
 ## Runtime prerequisites
 
