@@ -6,6 +6,9 @@
 # First-time setup wizard
 uv run python scripts/setup.py
 
+# Manage configuration (change token, provider, model, etc.)
+uv run python scripts/config.py
+
 # Dev mode (auto-reload on file changes)
 uv run python run_dev.py
 
