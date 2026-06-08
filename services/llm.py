@@ -6,11 +6,20 @@ from pathlib import Path
 from typing import Awaitable, Callable
 
 import httpx
-from openai import AsyncOpenAI
+from openai import (
+    APIError,
+    APIConnectionError,
+    APITimeoutError,
+    AuthenticationError,
+    AsyncOpenAI,
+    BadRequestError,
+    RateLimitError,
+)
 
 from config import GROQ_API_KEY, LLM_CHAT_API_KEY, LLM_CHAT_BASE_URL, LLM_MODEL as MODEL
 from services.chat_history import mark_user_active_today
 from services.database import increment_daily_metrics
+from services.summaries import get_financial_summary, get_portfolio_summary
 from services.tools import TOOLS, run_tool
 
 _client: AsyncOpenAI | None = None
@@ -63,23 +72,70 @@ _REMINDER_KIND_LABEL_ID: dict[str, str] = {
 }
 
 _EXTERNAL_TOOL_STATUS_TEXT: dict[str, str] = {
-    "news_search_macro": "Mencari berita terbaru...",
-    "knowledge_search": "Mencari referensi dokumen...",
-    "get_stock_price": "Mengambil harga saham...",
-    "get_forex_price": "Mengambil kurs forex...",
-    "get_crypto_price": "Mengambil harga crypto...",
-    "get_top_crypto_market_cap": "Mengambil data market crypto...",
-    "get_coin_detail": "Mengambil detail aset crypto...",
-    "get_trending_crypto": "Mengambil tren crypto...",
-    "search_crypto": "Mencari aset crypto...",
-    "get_gold_price": "Mengambil harga emas...",
-    "get_silver_price": "Mengambil harga perak...",
-    "get_currency_rate": "Mengambil kurs mata uang...",
+    "news_search_macro": "Searching latest news...",
+    "knowledge_search": "Searching documents...",
+    "get_stock_price": "Fetching stock price...",
+    "get_forex_price": "Fetching forex rate...",
+    "get_crypto_price": "Fetching crypto price...",
+    "get_top_crypto_market_cap": "Fetching crypto market data...",
+    "get_coin_detail": "Fetching coin details...",
+    "get_trending_crypto": "Fetching trending crypto...",
+    "search_crypto": "Searching crypto assets...",
+    "get_gold_price": "Fetching gold price...",
+    "get_silver_price": "Fetching silver price...",
+    "get_currency_rate": "Fetching exchange rate...",
+    "expense_record": "Logging expense...",
+    "income_record": "Logging income...",
+    "asset_record": "Recording asset...",
+    "asset_sell": "Processing sale...",
+    "debt_record": "Logging debt...",
+    "reminder_create": "Setting up reminder...",
 }
 
 
 def _tool_status_text(tool_name: str) -> str:
-    return _EXTERNAL_TOOL_STATUS_TEXT.get(tool_name, "Memproses data...")
+    return _EXTERNAL_TOOL_STATUS_TEXT.get(tool_name, "Processing...")
+
+
+async def _build_financial_context(user_id: int) -> str:
+    """Fetch and format a compact financial snapshot for injection into the system prompt.
+    Returns empty string if there is no data or on error."""
+    try:
+        fin = await get_financial_summary(user_id)
+        port = await get_portfolio_summary(user_id)
+        parts: list[str] = []
+
+        if fin["total_income"] > 0 or fin["total_expense"] > 0:
+            balance = fin["total_balance"]
+            parts.append(
+                f"Balance: Rp {fin['total_balance']:,.0f} "
+                f"(income Rp {fin['total_income']:,.0f}, expense Rp {fin['total_expense']:,.0f})"
+            )
+            if fin["per_category"]:
+                top = sorted(fin["per_category"].items(), key=lambda x: x[1], reverse=True)[:5]
+                cats = ", ".join(f"{c}: Rp {v:,.0f}" for c, v in top)
+                parts.append(f"Top categories: {cats}")
+            if fin["total_lent_outstanding"] > 0:
+                parts.append(f"Outstanding lent: Rp {fin['total_lent_outstanding']:,.0f}")
+            if fin["total_borrowed_outstanding"] > 0:
+                parts.append(f"Outstanding borrowed: Rp {fin['total_borrowed_outstanding']:,.0f}")
+
+        port_summary = port.get("summary", {})
+        if port_summary.get("total_value", 0) > 0:
+            alloc = ", ".join(
+                f"{k}: {v}%" for k, v in port_summary.get("allocation_percent", {}).items()
+            )
+            parts.append(
+                f"Portfolio: Rp {port_summary['total_value']:,.0f} "
+                f"in {port_summary.get('asset_count', 0)} assets ({alloc})"
+            )
+
+        if not parts:
+            return ""
+        return "\n\n**Your current financial snapshot (use this to personalize responses):**\n" + "\n".join(f"- {p}" for p in parts)
+    except Exception:
+        logging.debug("Failed to build financial context for user %s", user_id)
+        return ""
 
 
 def get_client() -> AsyncOpenAI:
@@ -132,13 +188,19 @@ async def polish_reminder_message(draft: str, *, kind: str, title: str = "") -> 
         )
         out = (response.choices[0].message.content or "").strip()
         return out if out else draft
+    except (AuthenticationError, RateLimitError, APIConnectionError, APITimeoutError) as e:
+        logging.warning("Reminder polish skipped (API error): %s", e)
+        return draft
     except Exception:
-        logging.exception("polish_reminder_message failed")
+        logging.exception("Reminder polish unexpected error")
         return draft
 
 
 async def transcribe(audio_path: Path) -> str:
     """Transcribe audio file to text using Groq Whisper."""
+    if not GROQ_API_KEY:
+        logging.warning("Transcription skipped: GROQ_API_KEY not set")
+        return ""
     try:
         client = get_groq_client()
         with open(audio_path, "rb") as f:
@@ -147,8 +209,11 @@ async def transcribe(audio_path: Path) -> str:
                 model="whisper-large-v3",
             )
         return result.text
+    except (AuthenticationError, RateLimitError, APIConnectionError, APITimeoutError) as e:
+        logging.error("Transcription API error: %s", e)
+        return ""
     except Exception:
-        logging.exception("Transcription failed")
+        logging.exception("Transcription unexpected error")
         return ""
 
 
@@ -158,17 +223,19 @@ async def chat(
     status_callback: Callable[[str], Awaitable[None]] | None = None,
 ) -> str:
     """Send messages to LLM; run tools if requested; return final assistant reply."""
-    try:
-        client = get_client()
-        current = list(messages)
-        total_tokens = 0
-        # Inject current date/time into system message so the model knows "today" (once per turn)
-        if current and current[0].get("role") == "system":
-            now = datetime.now(WIB)
-            time_line = f"\n\n**Tanggal dan waktu saat ini (untuk konteks):** {now.strftime('%d %B %Y, %H:%M')} WIB."
-            current[0] = {"role": "system", "content": (current[0].get("content") or "") + time_line}
+    client = get_client()
+    current = list(messages)
+    total_tokens = 0
 
-        for _ in range(MAX_TOOL_ROUNDS):
+    # Inject current date/time and financial context into system message
+    if current and current[0].get("role") == "system":
+        now = datetime.now(WIB)
+        time_line = f"\n\nCurrent date and time: {now.strftime('%A, %d %B %Y, %H:%M')} WIB (UTC+7)."
+        ctx = await _build_financial_context(user_id)
+        current[0] = {"role": "system", "content": current[0].get("content") + time_line + ctx}
+
+    try:
+        for round_num in range(1, MAX_TOOL_ROUNDS + 1):
             response = await client.chat.completions.create(
                 model=MODEL,
                 messages=current,
@@ -183,6 +250,7 @@ async def chat(
                     prompt_tokens = getattr(usage, "prompt_tokens", 0) or 0
                     completion_tokens = getattr(usage, "completion_tokens", 0) or 0
                     total_tokens += int(prompt_tokens) + int(completion_tokens)
+
             msg = response.choices[0].message
 
             if not msg.tool_calls:
@@ -196,6 +264,7 @@ async def chat(
 
             current.append(msg)
             last_status: str | None = None
+
             for tc in msg.tool_calls:
                 name = tc.function.name
                 if status_callback:
@@ -203,17 +272,41 @@ async def chat(
                     if status != last_status:
                         await status_callback(status)
                         last_status = status
-                args = json.loads(tc.function.arguments or "{}")
-                result = await run_tool(name, args, user_id)
-                current.append(
-                    {
+
+                try:
+                    args = json.loads(tc.function.arguments or "{}")
+                except json.JSONDecodeError:
+                    current.append({
                         "role": "tool",
                         "tool_call_id": tc.id,
-                        "content": result,
-                    }
-                )
+                        "content": json.dumps({"error": "Invalid arguments JSON"}),
+                    })
+                    continue
 
-        return "Maaf, terlalu banyak langkah. Coba lagi."
+                result = await run_tool(name, args, user_id)
+                current.append({
+                    "role": "tool",
+                    "tool_call_id": tc.id,
+                    "content": result,
+                })
+
+        return "I need more steps to complete this. Could you simplify or break down your request?"
+
+    except AuthenticationError:
+        logging.error("LLM authentication failed — check LLM_API_KEY")
+        return "I'm having trouble authenticating. Please contact the admin to verify the API key."
+    except RateLimitError:
+        logging.warning("LLM rate limited")
+        return "I'm receiving too many requests right now. Give me a moment and try again."
+    except APITimeoutError:
+        logging.error("LLM request timed out")
+        return "The request timed out. The service might be busy — please try again."
+    except APIConnectionError as e:
+        logging.error("LLM connection error: %s", e)
+        return "I can't reach the AI service right now. Please check your network or try again later."
+    except BadRequestError as e:
+        logging.error("LLM bad request: %s", e)
+        return "Something went wrong with the request format. The admin may need to adjust settings."
     except Exception:
-        logging.exception("LLM request failed")
-        return "Maaf, terjadi kesalahan. Coba lagi nanti."
+        logging.exception("LLM unexpected error")
+        return "An unexpected error occurred. Please try again."

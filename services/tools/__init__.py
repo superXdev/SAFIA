@@ -1,4 +1,5 @@
 """Tool registry — collects schemas and dispatches handlers."""
+import json
 import logging
 from typing import Any
 
@@ -38,9 +39,13 @@ _HANDLERS: dict[str, Any] = {
 async def run_tool(name: str, arguments: dict[str, Any], user_id: int) -> str:
     handler = _HANDLERS.get(name)
     if not handler:
-        return "Unknown tool."
+        logging.warning("Unknown tool requested: %s", name)
+        return json.dumps({"error": f"Unknown tool: {name}"})
     try:
         return await handler(arguments, user_id)
+    except (ValueError, TypeError, KeyError) as e:
+        logging.error("Tool %s argument error: %s", name, e)
+        return json.dumps({"error": f"Invalid arguments for {name}"})
     except Exception:
-        logging.exception("Tool execution failed")
-        return "Error saat menjalankan tool."
+        logging.exception("Tool %s execution failed", name)
+        return json.dumps({"error": f"Tool {name} execution failed"})

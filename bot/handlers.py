@@ -1,4 +1,5 @@
 """Telegram message handlers."""
+import logging
 import tempfile
 from pathlib import Path
 from time import monotonic
@@ -30,15 +31,14 @@ def _build_status_updater(progress_message: Message) -> Callable[[str], Awaitabl
         now = monotonic()
         if not text or text == last_text:
             return
-        # avoid rapid edit bursts when multiple tools run quickly
-        if now - last_at < 0.8:
+        if now - last_at < 0.6:
             return
         try:
             await progress_message.edit_text(text, parse_mode=ParseMode.MARKDOWN)
             last_text = text
             last_at = now
         except Exception:
-            return
+            logging.debug("Status update edit failed (message may have been deleted)")
 
     return _update
 
@@ -59,15 +59,15 @@ async def handle_start(message: Message) -> None:
     name_part = f" {first_name}" if first_name else ""
 
     text = (
-        f"Halo{name_part}! Aku *SAFIA*, teman chat untuk urusan *uang kamu*.\n\n"
-        "*Bisa apa?*\n"
-        "• Catat pemasukan, pengeluaran, dan investasi (saham, emas, crypto, dll.)\n"
-        "• Tanya *harga* atau *kurs* (contoh: emas hari ini, Bitcoin, dollar ke rupiah)\n"
-        "• Bantu *hutang*, tabungan, tanya seputar berita/edukasi uang, sampai *pengingat* rutin\n\n"
-        "*Gimana pakainya?* Ketik teks, kirim suara, atau foto struk/slip yang jelas.\n\n"
-        "/start = mulai ulang dari awal\n"
-        "/bantuan = info singkat & batas pemakaian\n\n"
-        "Ada pertanyaan atau mau cerita? Langsung kirim saja 🙂"
+        f"Hi{name_part}! I'm *SAFIA*, your personal finance chat companion.\n\n"
+        "*What can I do?*\n"
+        "- Track income, expenses, and investments (stocks, gold, crypto, etc.)\n"
+        "- Check *prices* or *exchange rates* (e.g. gold today, Bitcoin, USD to IDR)\n"
+        "- Help with *debt*, savings, financial news, education, and *reminders*\n\n"
+        "*How to use?* Send text, voice, or a clear photo of a receipt/payslip.\n\n"
+        "/start = restart conversation\n"
+        "/bantuan = quick info & limits\n\n"
+        "Got questions? Just send a message 🙂"
     )
 
     await message.answer(text, parse_mode=ParseMode.MARKDOWN)
@@ -75,16 +75,16 @@ async def handle_start(message: Message) -> None:
 
 async def handle_bantuan(message: Message) -> None:
     text = (
-        "*Bantuan SAFIA*\n\n"
-        "*Perintah*\n"
-        "/start — mulai ulang percakapan\n"
-        "/bantuan — pesan ini\n\n"
-        "*Kirim pesan*\n"
-        "• *Teks* — tanya atau cerita soal uang, investasi, harga, kurs, dll.\n"
-        "• *Suara* — direkam jadi teks, lalu dibalas seperti chat biasa\n"
-        "• *Foto* — struk atau slip yang jelas (aku bantu baca isinya)\n\n"
-        "*Batas:* maksimal *25 pesan per hari* per akun (reset tiap hari).\n\n"
-        "*Tip:* tulis jumlah uang dan tanggal dengan jelas supaya catatan tepat."
+        "*SAFIA Help*\n\n"
+        "*Commands*\n"
+        "/start — restart conversation\n"
+        "/bantuan — this message\n\n"
+        "*Send*\n"
+        "- *Text* — ask about money, investments, prices, exchange rates, etc.\n"
+        "- *Voice* — transcribed to text, then answered like a regular chat\n"
+        "- *Photo* — clear receipt or payslip (I'll read the contents)\n\n"
+        "*Limit:* max *25 messages per day* per account (resets daily).\n\n"
+        "*Tip:* write amounts and dates clearly for accurate records."
     )
     await message.answer(text, parse_mode=ParseMode.MARKDOWN)
 
@@ -93,8 +93,8 @@ async def handle_message(message: Message) -> None:
     allowed, remaining = await check_and_increment_rate_limit(message.from_user.id)
     if not allowed:
         await message.answer(
-            "Kamu sudah mencapai batas 25 pesan hari ini.\n"
-            "Coba lagi besok ya, atau reset percakapan jika perlu.",
+            "You've reached the daily limit of 25 messages.\n"
+            "Please try again tomorrow, or reset the conversation if needed.",
             parse_mode=ParseMode.MARKDOWN,
         )
         return
@@ -102,29 +102,28 @@ async def handle_message(message: Message) -> None:
     history = await get_history(message.chat.id)
     history.append({"role": "user", "content": message.text or ""})
 
-    typing = await message.answer("Berpikir...", parse_mode=ParseMode.MARKDOWN)
+    thinking = await message.answer("Thinking...", parse_mode=ParseMode.MARKDOWN)
     reply = await llm_chat(
         history,
         message.from_user.id,
-        status_callback=_build_status_updater(typing),
+        status_callback=_build_status_updater(thinking),
     )
     history.append({"role": "assistant", "content": reply})
     await save_history(message.chat.id, history)
-
-    await typing.edit_text(reply, parse_mode=ParseMode.MARKDOWN)
+    await thinking.edit_text(reply, parse_mode=ParseMode.MARKDOWN)
 
 
 async def handle_voice(message: Message) -> None:
     allowed, remaining = await check_and_increment_rate_limit(message.from_user.id)
     if not allowed:
         await message.answer(
-            "Kamu sudah mencapai batas 25 pesan hari ini.\n"
-            "Coba lagi besok ya, atau reset percakapan jika perlu.",
+            "You've reached the daily limit of 25 messages.\n"
+            "Please try again tomorrow, or reset the conversation if needed.",
             parse_mode=ParseMode.MARKDOWN,
         )
         return
 
-    typing = await message.answer("Mendengarkan...", parse_mode=ParseMode.MARKDOWN)
+    typing = await message.answer("Listening...", parse_mode=ParseMode.MARKDOWN)
 
     file = await message.bot.get_file(message.voice.file_id)
     with tempfile.NamedTemporaryFile(suffix=".ogg", delete=False) as tmp:
@@ -138,7 +137,7 @@ async def handle_voice(message: Message) -> None:
 
     if not text:
         await typing.edit_text(
-            "Maaf, tidak bisa mengenali suara. Coba lagi.",
+            "Sorry, I couldn't understand the audio. Please try again.",
             parse_mode=ParseMode.MARKDOWN,
         )
         return
@@ -146,7 +145,7 @@ async def handle_voice(message: Message) -> None:
     history = await get_history(message.chat.id)
     history.append({"role": "user", "content": text})
 
-    await typing.edit_text("Berpikir...", parse_mode=ParseMode.MARKDOWN)
+    await typing.edit_text("Thinking...", parse_mode=ParseMode.MARKDOWN)
     reply = await llm_chat(
         history,
         message.from_user.id,
@@ -161,7 +160,7 @@ async def handle_voice(message: Message) -> None:
 async def handle_photo(message: Message) -> None:
     if not LLM_CHAT_API_KEY:
         await message.answer(
-            "Fitur foto dokumen belum diaktifkan. Hubungi admin.",
+            "Document photo scanning is not enabled. Contact admin.",
             parse_mode=ParseMode.MARKDOWN,
         )
         return
@@ -169,13 +168,13 @@ async def handle_photo(message: Message) -> None:
     allowed, remaining = await check_and_increment_rate_limit(message.from_user.id)
     if not allowed:
         await message.answer(
-            "Kamu sudah mencapai batas 25 pesan hari ini.\n"
-            "Coba lagi besok ya, atau reset percakapan jika perlu.",
+            "You've reached the daily limit of 25 messages.\n"
+            "Please try again tomorrow, or reset the conversation if needed.",
             parse_mode=ParseMode.MARKDOWN,
         )
         return
 
-    typing = await message.answer("Memproses gambar...", parse_mode=ParseMode.MARKDOWN)
+    typing = await message.answer("Scanning document...", parse_mode=ParseMode.MARKDOWN)
 
     # Telegram sends multiple sizes; use the largest
     photo = message.photo[-1]
@@ -192,7 +191,7 @@ async def handle_photo(message: Message) -> None:
 
     if not extracted or extracted.lower().startswith("not a document"):
         await typing.edit_text(
-            "Tidak bisa membaca dokumen dari foto ini. Kirim foto invoice, slip gaji, atau catatan yang jelas.",
+            "Couldn't read a document from this photo. Send a clear photo of an invoice, payslip, or receipt.",
             parse_mode=ParseMode.MARKDOWN,
         )
         return
@@ -201,13 +200,13 @@ async def handle_photo(message: Message) -> None:
     final_amount = parse_final_amount(extracted)
     amount_hint = ""
     if final_amount is not None and final_amount > 0:
-        amount_hint = f"\n\n**Gunakan angka ini saat mencatat (jumlah final yang sudah dihitung): Rp {final_amount:,.0f}**. Jangan pakai subtotal atau total kotor."
+        amount_hint = f"\n\n**Use this calculated final amount when recording: Rp {final_amount:,.0f}**. Do not use subtotals or gross totals."
     # Use extracted text as user context and get SAFIA's reply
-    user_context = f"[Isi dokumen dari foto yang dikirim user]\n{extracted}{amount_hint}"
+    user_context = f"[Document content extracted from photo]\n{extracted}{amount_hint}"
     history = await get_history(message.chat.id)
     history.append({"role": "user", "content": user_context})
 
-    await typing.edit_text("Berpikir...", parse_mode=ParseMode.MARKDOWN)
+    await typing.edit_text("Thinking...", parse_mode=ParseMode.MARKDOWN)
     reply = await llm_chat(
         history,
         message.from_user.id if message.from_user else 0,
