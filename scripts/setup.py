@@ -78,13 +78,13 @@ def _input_required(prompt: str, *, default: str = "", validate: str = r".+") ->
             prompt,
             default=default,
             style=QS_STYLE,
-            validate=lambda v: True if re.match(validate, v) else "Tidak boleh kosong. Coba lagi.",
+            validate=lambda v: True if re.match(validate, v) else t("cannot_be_empty"),
         ).unsafe_ask()
         if val is None:
             raise KeyboardInterrupt
         if re.match(validate, val.strip()):
             return val.strip()
-        console.print("    [red]Masukkan tidak boleh kosong. Coba lagi.[/red]")
+        console.print(f"    [red]{t('input_cannot_be_empty')}[/red]")
 
 
 def _input_optional(prompt: str, *, default: str = "") -> str:
@@ -107,13 +107,172 @@ def _input_required_password(prompt: str) -> str:
         val = questionary.password(
             prompt,
             style=QS_STYLE,
-            validate=lambda v: True if re.match(r".+", v) else "Tidak boleh kosong. Coba lagi.",
+            validate=lambda v: True if re.match(r".+", v) else t("cannot_be_empty"),
         ).unsafe_ask()
         if val is None:
             raise KeyboardInterrupt
         if re.match(r".+", val.strip()):
             return val.strip()
-        console.print("    [red]Masukkan tidak boleh kosong. Coba lagi.[/red]")
+        console.print(f"    [red]{t('input_cannot_be_empty')}[/red]")
+
+
+# ── Translations ─────────────────────────────────────────────────────────────
+
+LANG = "id"
+
+TR = {
+    "en": {
+        "section_telegram": "Telegram Bot",
+        "section_ai_provider": "Choose AI Provider",
+        "section_serpapi": "SerpAPI",
+        "section_database": "Database",
+        "section_admin": "Admin Dashboard",
+        "section_save": "Save Configuration",
+        "section_language": "Language",
+        "botfather": "Create a bot with @BotFather, paste the token.",
+        "whisper_same": "Whisper will use the same Groq API Key.",
+        "whisper_groq": "Whisper uses Groq. Skip if not needed.",
+        "skip_optional": "Skip if not needed.",
+        "serpapi_desc": "For financial news search. Sign up at serpapi.com",
+        "fetching_models": "Fetching model list...",
+        "sqlite_default": "Default: SQLite (zero-config)",
+        "env_backup": "Old .env copied to .env.backup",
+        "redis_docker": "Docker: docker run -d -p 6379:6379 --name safia-redis redis:7-alpine",
+        "redis_missing": "Redis not detected. Bot requires Redis.",
+        "model_fetch_fail": "Failed to fetch models. Enter manually.",
+        "provider_chosen": "Provider: {provider}",
+        "models_found": "Found {count} models.",
+        "admin_creds": "Username: {user}, Password: {pw}",
+        "env_saved": ".env saved",
+        "choose_provider": "Choose provider:",
+        "telegram_token": "TELEGRAM_BOT_TOKEN:",
+        "api_key_lunos": "API Key Lunos (sk-...):",
+        "api_key_groq": "API Key Groq (gsk_...):",
+        "api_key_openai": "API Key OpenAI (sk-...):",
+        "api_key_custom": "API Key Custom:",
+        "model_select": "Choose model (type to search):",
+        "model_manual": "Model name:",
+        "whisper_key": "Groq API Key for Whisper (optional):",
+        "serpapi_key": "SerpAPI Key (optional):",
+        "custom_base_url": "Custom Base URL (OpenAI-compatible):",
+        "database_url": "DATABASE_URL:",
+        "redis_url": "REDIS_URL:",
+        "press_enter_redis": "Press Enter when Redis is ready...",
+        "enable_admin": "Enable admin dashboard?",
+        "admin_username": "Admin username:",
+        "admin_password": "Admin password (blank = random):",
+        "cannot_be_empty": "Cannot be empty. Try again.",
+        "input_cannot_be_empty": "Input cannot be empty. Try again.",
+        "setup_complete": "Setup Complete!",
+        "run_bot": "uv run python main.py",
+        "run_dev": "uv run python run_dev.py",
+        "run_admin": "uv run python admin_dashboard.py",
+        "bot_label": "Bot:",
+        "dev_label": "Dev:",
+        "admin_label": "Admin:",
+        "python_required": "Python 3.12+ required. Current:",
+        "uv_not_found": "uv not found. Install:",
+        "cancelled": "Cancelled.",
+        "choice_lunos": "Lunos — AI gateway Indonesia",
+        "choice_groq": "Groq — Fast, free tier",
+        "choice_openai": "OpenAI",
+        "choice_custom": "Custom — own endpoint",
+        "language_prompt": "Choose language / Pilih bahasa:",
+        "env_header": "# SAFIA .env",
+        "env_provider": "# AI Provider: {provider}",
+        "env_database": "# Database",
+        "env_admin": "# Admin Dashboard",
+        "env_groq_disabled": "# GROQ_API_KEY=  (not set, voice disabled)",
+        "env_serpapi_disabled": "# SERPAPI_KEY=  (not set, search disabled)",
+        "uv_sync": "uv sync...",
+        "fetching_models_status": "Fetching models...",
+    },
+    "id": {
+        "section_telegram": "Telegram Bot",
+        "section_ai_provider": "Pilih AI Provider",
+        "section_serpapi": "SerpAPI",
+        "section_database": "Database",
+        "section_admin": "Admin Dashboard",
+        "section_save": "Simpan Konfigurasi",
+        "section_language": "Bahasa",
+        "botfather": "Buat bot di @BotFather, tempel token-nya.",
+        "whisper_same": "Whisper akan pakai API Key Groq yang sama.",
+        "whisper_groq": "Whisper pakai Groq. Kosongkan jika tidak perlu.",
+        "skip_optional": "Kosongkan jika tidak perlu.",
+        "serpapi_desc": "Untuk pencarian berita keuangan. Daftar di serpapi.com",
+        "fetching_models": "Mengambil daftar model...",
+        "sqlite_default": "Default: SQLite (zero-config)",
+        "env_backup": ".env lama dicopy ke .env.backup",
+        "redis_docker": "Docker: docker run -d -p 6379:6379 --name safia-redis redis:7-alpine",
+        "redis_missing": "Redis tidak terdeteksi. Bot wajib Redis.",
+        "model_fetch_fail": "Gagal fetch model. Masukkan manual.",
+        "provider_chosen": "Provider: {provider}",
+        "models_found": "Ditemukan {count} model.",
+        "admin_creds": "Username: {user}, Password: {pw}",
+        "env_saved": ".env tersimpan",
+        "choose_provider": "Pilih provider:",
+        "telegram_token": "TELEGRAM_BOT_TOKEN:",
+        "api_key_lunos": "API Key Lunos (sk-...):",
+        "api_key_groq": "API Key Groq (gsk_...):",
+        "api_key_openai": "API Key OpenAI (sk-...):",
+        "api_key_custom": "API Key Custom:",
+        "model_select": "Pilih model (ketik untuk mencari):",
+        "model_manual": "Nama model:",
+        "whisper_key": "Groq API Key untuk Whisper (opsional):",
+        "serpapi_key": "SerpAPI Key (opsional):",
+        "custom_base_url": "Base URL Custom (harus OpenAI-compatible):",
+        "database_url": "DATABASE_URL:",
+        "redis_url": "REDIS_URL:",
+        "press_enter_redis": "Tekan Enter setelah Redis siap...",
+        "enable_admin": "Aktifkan admin dashboard?",
+        "admin_username": "Username admin:",
+        "admin_password": "Password admin (kosongkan = random):",
+        "cannot_be_empty": "Tidak boleh kosong. Coba lagi.",
+        "input_cannot_be_empty": "Masukkan tidak boleh kosong. Coba lagi.",
+        "setup_complete": "Setup Selesai!",
+        "run_bot": "uv run python main.py",
+        "run_dev": "uv run python run_dev.py",
+        "run_admin": "uv run python admin_dashboard.py",
+        "bot_label": "Bot:",
+        "dev_label": "Dev:",
+        "admin_label": "Admin:",
+        "python_required": "Python 3.12+ diperlukan. Versi saat ini:",
+        "uv_not_found": "uv tidak ditemukan. Install:",
+        "cancelled": "Dibatalkan.",
+        "choice_lunos": "Lunos — AI gateway Indonesia",
+        "choice_groq": "Groq — Cepat, free tier",
+        "choice_openai": "OpenAI",
+        "choice_custom": "Custom — endpoint sendiri",
+        "language_prompt": "Choose language / Pilih bahasa:",
+        "env_header": "# SAFIA .env",
+        "env_provider": "# AI Provider: {provider}",
+        "env_database": "# Database",
+        "env_admin": "# Admin Dashboard",
+        "env_groq_disabled": "# GROQ_API_KEY=  (tidak diset, voice dinonaktifkan)",
+        "env_serpapi_disabled": "# SERPAPI_KEY=  (tidak diset, pencarian dinonaktifkan)",
+        "uv_sync": "uv sync...",
+        "fetching_models_status": "Fetching models...",
+    },
+}
+
+
+def t(key: str, **kwargs) -> str:
+    return TR[LANG].get(key, key).format(**kwargs)
+
+
+def choose_language() -> str:
+    _section(t("section_language"))
+    choice = questionary.select(
+        t("language_prompt"),
+        choices=[
+            questionary.Choice("Bahasa Indonesia", value="id"),
+            questionary.Choice("English", value="en"),
+        ],
+        style=QS_STYLE,
+    ).unsafe_ask()
+    if choice is None:
+        raise KeyboardInterrupt
+    return choice
 
 
 # ── Prerequisites ─────────────────────────────────────────────────────────────
@@ -122,16 +281,13 @@ def _input_required_password(prompt: str) -> str:
 def check_python() -> None:
     v = sys.version_info
     if v < (3, 12):
-        console.print("[red]Python 3.12+ diperlukan. Versi saat ini: %s.%s[/red]" % (v.major, v.minor))
+        console.print(f"[red]{t('python_required')} {v.major}.{v.minor}[/red]")
         sys.exit(1)
 
 
 def check_uv() -> None:
     if shutil.which("uv") is None:
-        console.print(
-            "[red]uv tidak ditemukan. "
-            "Install dari https://docs.astral.sh/uv/getting-started/installation/[/red]"
-        )
+        console.print(f"[red]{t('uv_not_found')} https://docs.astral.sh/uv/getting-started/installation/[/red]")
         sys.exit(1)
 
 
@@ -142,10 +298,10 @@ def check_redis() -> None:
     result = s.connect_ex(("localhost", 6379))
     s.close()
     if result != 0:
-        _warn("Redis tidak terdeteksi. Bot wajib Redis.")
-        _info("Docker: docker run -d -p 6379:6379 --name safia-redis redis:7-alpine")
+        _warn(t("redis_missing"))
+        _info(t("redis_docker"))
         questionary.text(
-            "Tekan Enter setelah Redis siap...",
+            t("press_enter_redis"),
             style=QS_STYLE,
         ).unsafe_ask()
 
@@ -154,20 +310,20 @@ def check_redis() -> None:
 
 
 def configure_telegram() -> str:
-    _section("Telegram Bot")
-    _info("Buat bot di @BotFather, tempel token-nya.")
-    return _input_required_password("TELEGRAM_BOT_TOKEN:")
+    _section(t("section_telegram"))
+    _info(t("botfather"))
+    return _input_required_password(t("telegram_token"))
 
 
 def choose_provider() -> tuple[str, str]:
-    _section("Pilih AI Provider")
+    _section(t("section_ai_provider"))
     choice = questionary.select(
-        "Pilih provider:",
+        t("choose_provider"),
         choices=[
-            questionary.Choice("Lunos — AI gateway Indonesia", value="lunos"),
-            questionary.Choice("Groq — Cepat, free tier", value="groq"),
-            questionary.Choice("OpenAI", value="openai"),
-            questionary.Choice("Custom — endpoint sendiri", value="custom"),
+            questionary.Choice(t("choice_lunos"), value="lunos"),
+            questionary.Choice(t("choice_groq"), value="groq"),
+            questionary.Choice(t("choice_openai"), value="openai"),
+            questionary.Choice(t("choice_custom"), value="custom"),
         ],
         style=QS_STYLE,
     ).unsafe_ask()
@@ -181,16 +337,16 @@ def choose_provider() -> tuple[str, str]:
         "openai": "https://api.openai.com/v1",
         "custom": "",
     }
-    _success(f"Provider: {choice}")
+    _success(t("provider_chosen", provider=choice))
     return choice, hints[choice]
 
 
 def get_api_key(provider: str) -> str:
     prompts = {
-        "lunos": "API Key Lunos (sk-...):",
-        "groq": "API Key Groq (gsk_...):",
-        "openai": "API Key OpenAI (sk-...):",
-        "custom": "API Key Custom:",
+        "lunos": t("api_key_lunos"),
+        "groq": t("api_key_groq"),
+        "openai": t("api_key_openai"),
+        "custom": t("api_key_custom"),
     }
     return _input_password(prompts.get(provider, "API Key:"))
 
@@ -222,18 +378,18 @@ def get_model(provider: str, base_url: str, api_key: str) -> str:
     }
     default = defaults.get(provider, "")
 
-    _info("Mengambil daftar model...")
+    _info(t("fetching_models"))
     models = None
     if base_url and api_key:
-        with console.status("[bold bright_blue]Fetching models...[/bold bright_blue]"):
+        with console.status(f"[bold bright_blue]{t('fetching_models_status')}[/bold bright_blue]"):
             models = _fetch_models(base_url, api_key)
 
     if models:
-        _success(f"Ditemukan {len(models)} model.")
+        _success(t("models_found", count=len(models)))
         if default not in models:
             default = models[0] if models else default
         choice = questionary.autocomplete(
-            "Pilih model (ketik untuk mencari):",
+            t("model_select"),
             choices=models,
             default=default,
             style=QS_STYLE,
@@ -243,12 +399,12 @@ def get_model(provider: str, base_url: str, api_key: str) -> str:
             raise KeyboardInterrupt
         return choice
 
-    _warn("Gagal fetch model. Masukkan manual.")
+    _warn(t("model_fetch_fail"))
     val = questionary.text(
-        "Nama model:",
+        t("model_manual"),
         default=default,
         style=QS_STYLE,
-        validate=lambda v: True if v.strip() else "Tidak boleh kosong.",
+        validate=lambda v: True if v.strip() else t("cannot_be_empty"),
     ).unsafe_ask()
     if val is None:
         raise KeyboardInterrupt
@@ -257,29 +413,29 @@ def get_model(provider: str, base_url: str, api_key: str) -> str:
 
 def get_groq_whisper_key(provider: str, api_key: str) -> str:
     if provider == "groq":
-        _info("Whisper akan pakai API Key Groq yang sama.")
+        _info(t("whisper_same"))
         return api_key
-    _info("Whisper pakai Groq. Kosongkan jika tidak perlu.")
-    return _input_password("Groq API Key untuk Whisper (opsional):")
+    _info(t("whisper_groq"))
+    return _input_password(t("whisper_key"))
 
 
 def get_serpapi_key() -> str:
-    _section("SerpAPI")
-    _info("Untuk pencarian berita keuangan. Daftar di serpapi.com")
-    _info("Kosongkan jika tidak perlu.")
-    return _input_password("SerpAPI Key (opsional):")
+    _section(t("section_serpapi"))
+    _info(t("serpapi_desc"))
+    _info(t("skip_optional"))
+    return _input_password(t("serpapi_key"))
 
 
 def get_custom_base_url() -> str:
-    return _input_required("Base URL Custom (harus OpenAI-compatible):")
+    return _input_required(t("custom_base_url"))
 
 
 def configure_database() -> str:
-    _section("Database")
+    _section(t("section_database"))
     default = "sqlite+aiosqlite:///data/safia.db"
-    _info("Default: SQLite (zero-config)")
+    _info(t("sqlite_default"))
     val = questionary.text(
-        f"DATABASE_URL:",
+        t("database_url"),
         default=default,
         style=QS_STYLE,
     ).unsafe_ask()
@@ -291,7 +447,7 @@ def configure_database() -> str:
 def configure_redis() -> str:
     default = "redis://localhost:6379/0"
     val = questionary.text(
-        f"REDIS_URL:",
+        t("redis_url"),
         default=default,
         style=QS_STYLE,
     ).unsafe_ask()
@@ -301,9 +457,9 @@ def configure_redis() -> str:
 
 
 def configure_admin() -> tuple[str, str, str]:
-    _section("Admin Dashboard")
+    _section(t("section_admin"))
     enable = questionary.confirm(
-        "Aktifkan admin dashboard?",
+        t("enable_admin"),
         default=True,
         style=QS_STYLE,
     ).unsafe_ask()
@@ -312,7 +468,7 @@ def configure_admin() -> tuple[str, str, str]:
         return "", "", ""
 
     user = questionary.text(
-        "Username admin:",
+        t("admin_username"),
         default="admin",
         style=QS_STYLE,
     ).unsafe_ask()
@@ -321,7 +477,7 @@ def configure_admin() -> tuple[str, str, str]:
     user = user.strip() or "admin"
 
     pw = questionary.password(
-        "Password admin (kosongkan = random):",
+        t("admin_password"),
         default=secrets.token_urlsafe(12),
         style=QS_STYLE,
     ).unsafe_ask()
@@ -330,7 +486,7 @@ def configure_admin() -> tuple[str, str, str]:
     pw = pw.strip() or secrets.token_urlsafe(12)
 
     secret = secrets.token_urlsafe(24)
-    _success(f"Username: {user}, Password: {pw}")
+    _success(t("admin_creds", user=user, pw=pw))
     return user, pw, secret
 
 
@@ -356,13 +512,13 @@ def write_env(
     if exists:
         backup = ROOT / ".env.backup"
         shutil.copy2(env_path, backup)
-        _info(".env lama dicopy ke .env.backup")
+        _info(t("env_backup"))
 
     lines = [
-        f"# SAFIA .env",
+        t("env_header"),
         f"TELEGRAM_BOT_TOKEN={telegram_token}",
         f"",
-        f"# AI Provider: {provider}",
+        t("env_provider", provider=provider),
         f"LLM_PROVIDER={provider}",
         f"LLM_API_KEY={api_key}",
         f"LLM_MODEL={model}",
@@ -374,20 +530,20 @@ def write_env(
     if groq_whisper_key:
         lines.append(f"GROQ_API_KEY={groq_whisper_key}")
     else:
-        lines.append(f"# GROQ_API_KEY=  (tidak diset, voice dinonaktifkan)")
+        lines.append(t("env_groq_disabled"))
 
     if serpapi_key:
         lines.append(f"SERPAPI_KEY={serpapi_key}")
     else:
-        lines.append(f"# SERPAPI_KEY=  (tidak diset, pencarian dinonaktifkan)")
+        lines.append(t("env_serpapi_disabled"))
 
     lines += [
         f"",
-        f"# Database",
+        t("env_database"),
         f"DATABASE_URL={database_url}",
         f"REDIS_URL={redis_url}",
         f"",
-        f"# Admin Dashboard",
+        t("env_admin"),
         f"ADMIN_USERNAME={admin_user}",
         f"ADMIN_PASSWORD={admin_pass}",
         f"FLASK_SECRET_KEY={flask_secret}",
@@ -395,13 +551,14 @@ def write_env(
     ]
 
     env_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    _success(f".env tersimpan")
+    _success(t("env_saved"))
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 
 def main() -> None:
+    global LANG
     console.clear()
     console.print()
     console.print(
@@ -416,11 +573,13 @@ def main() -> None:
     )
     console.print()
 
+    LANG = choose_language()
+
     check_python()
     check_uv()
 
     if not (ROOT / ".venv").exists():
-        with console.status("[bold bright_blue]uv sync...[/bold bright_blue]"):
+        with console.status(f"[bold bright_blue]{t('uv_sync')}[/bold bright_blue]"):
             os.system("uv sync")
 
     check_redis()
@@ -461,7 +620,7 @@ def main() -> None:
 
     # Write
     console.print()
-    _section("Simpan Konfigurasi")
+    _section(t("section_save"))
     write_env(
         telegram_token,
         provider,
@@ -481,16 +640,16 @@ def main() -> None:
     console.print(
         Panel(
             Align.center(
-                Text("Setup Selesai!", style="bold green")
+                Text(t("setup_complete"), style="bold green")
                 + Text("\n\n")
-                + Text("Bot:", style="dim")
-                + Text("  uv run python main.py", style="bright_cyan")
+                + Text(t("bot_label"), style="dim")
+                + Text(f"  {t('run_bot')}", style="bright_cyan")
                 + Text("\n")
-                + Text("Dev:", style="dim")
-                + Text("  uv run python run_dev.py", style="bright_cyan")
+                + Text(t("dev_label"), style="dim")
+                + Text(f"  {t('run_dev')}", style="bright_cyan")
                 + Text("\n")
-                + Text("Admin:", style="dim")
-                + Text("  uv run python admin_dashboard.py", style="bright_cyan"),
+                + Text(t("admin_label"), style="dim")
+                + Text(f"  {t('run_admin')}", style="bright_cyan"),
                 vertical="middle",
             ),
             border_style="green",
@@ -505,5 +664,5 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:
         console.print()
-        console.print("  [yellow]Dibatalkan.[/yellow]")
+        console.print(f"  [yellow]{t('cancelled')}[/yellow]")
         sys.exit(0)
