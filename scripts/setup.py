@@ -102,6 +102,20 @@ def _input_password(prompt: str) -> str:
     return val.strip()
 
 
+def _input_required_password(prompt: str) -> str:
+    while True:
+        val = questionary.password(
+            prompt,
+            style=QS_STYLE,
+            validate=lambda v: True if re.match(r".+", v) else "Tidak boleh kosong. Coba lagi.",
+        ).unsafe_ask()
+        if val is None:
+            raise KeyboardInterrupt
+        if re.match(r".+", val.strip()):
+            return val.strip()
+        console.print("    [red]Masukkan tidak boleh kosong. Coba lagi.[/red]")
+
+
 # ── Prerequisites ─────────────────────────────────────────────────────────────
 
 
@@ -128,11 +142,10 @@ def check_redis() -> None:
     result = s.connect_ex(("localhost", 6379))
     s.close()
     if result != 0:
-        _warn("Redis tidak terdeteksi di localhost:6379.")
-        _info("Bot tidak bisa berjalan tanpa Redis. Jalankan Redis dulu.")
+        _warn("Redis tidak terdeteksi. Bot wajib Redis.")
         _info("Docker: docker run -d -p 6379:6379 --name safia-redis redis:7-alpine")
         questionary.text(
-            "Tekan Enter setelah Redis siap (atau Esc untuk keluar)...",
+            "Tekan Enter setelah Redis siap...",
             style=QS_STYLE,
         ).unsafe_ask()
 
@@ -142,31 +155,19 @@ def check_redis() -> None:
 
 def configure_telegram() -> str:
     _section("Telegram Bot")
-    _info("Buat bot di @BotFather (https://t.me/BotFather), lalu tempel token-nya di sini.")
-    return _input_required("TELEGRAM_BOT_TOKEN:")
+    _info("Buat bot di @BotFather, tempel token-nya.")
+    return _input_required_password("TELEGRAM_BOT_TOKEN:")
 
 
 def choose_provider() -> tuple[str, str]:
-    _section("Pilih Penyedia AI (AI Provider)")
+    _section("Pilih AI Provider")
     choice = questionary.select(
         "Pilih provider:",
         choices=[
-            questionary.Choice(
-                "Lunos (default) — Gateway AI Indonesia, akses banyak model",
-                value="lunos",
-            ),
-            questionary.Choice(
-                "Groq — Inference cepat, gratis tier tersedia",
-                value="groq",
-            ),
-            questionary.Choice(
-                "OpenAI — GPT-4o, GPT-4.1, dsb",
-                value="openai",
-            ),
-            questionary.Choice(
-                "Custom — Endpoint OpenAI-compatible sendiri",
-                value="custom",
-            ),
+            questionary.Choice("Lunos — AI gateway Indonesia", value="lunos"),
+            questionary.Choice("Groq — Cepat, free tier", value="groq"),
+            questionary.Choice("OpenAI", value="openai"),
+            questionary.Choice("Custom — endpoint sendiri", value="custom"),
         ],
         style=QS_STYLE,
     ).unsafe_ask()
@@ -186,7 +187,7 @@ def choose_provider() -> tuple[str, str]:
 
 def get_api_key(provider: str) -> str:
     prompts = {
-        "lunos": "API Key Lunos (lsk_...):",
+        "lunos": "API Key Lunos (sk-...):",
         "groq": "API Key Groq (gsk_...):",
         "openai": "API Key OpenAI (sk-...):",
         "custom": "API Key Custom:",
@@ -221,7 +222,7 @@ def get_model(provider: str, base_url: str, api_key: str) -> str:
     }
     default = defaults.get(provider, "")
 
-    _info("Mengambil daftar model dari provider...")
+    _info("Mengambil daftar model...")
     models = None
     if base_url and api_key:
         with console.status("[bold bright_blue]Fetching models...[/bold bright_blue]"):
@@ -242,7 +243,7 @@ def get_model(provider: str, base_url: str, api_key: str) -> str:
             raise KeyboardInterrupt
         return choice
 
-    _warn("Gagal mengambil daftar model. Masukkan nama model manual.")
+    _warn("Gagal fetch model. Masukkan manual.")
     val = questionary.text(
         "Nama model:",
         default=default,
@@ -256,18 +257,16 @@ def get_model(provider: str, base_url: str, api_key: str) -> str:
 
 def get_groq_whisper_key(provider: str, api_key: str) -> str:
     if provider == "groq":
-        _info("Whisper akan menggunakan API Key Groq yang sama dengan provider utama.")
+        _info("Whisper akan pakai API Key Groq yang sama.")
         return api_key
-    _info("Whisper (transkripsi suara) selalu pakai Groq.")
-    _info("Kalau tidak diisi, fitur voice message akan dinonaktifkan.")
+    _info("Whisper pakai Groq. Kosongkan jika tidak perlu.")
     return _input_password("Groq API Key untuk Whisper (opsional):")
 
 
 def get_serpapi_key() -> str:
-    _section("SerpAPI — Pencarian Berita")
-    _info("SerpAPI digunakan untuk mencari berita keuangan via Google Search.")
-    _info("Daftar gratis di https://serpapi.com — dapatkan API key dari dashboard.")
-    _info("Kalau tidak diisi, fitur pencarian berita akan dinonaktifkan.")
+    _section("SerpAPI")
+    _info("Untuk pencarian berita keuangan. Daftar di serpapi.com")
+    _info("Kosongkan jika tidak perlu.")
     return _input_password("SerpAPI Key (opsional):")
 
 
@@ -278,7 +277,7 @@ def get_custom_base_url() -> str:
 def configure_database() -> str:
     _section("Database")
     default = "sqlite+aiosqlite:///data/safia.db"
-    _info(f"Default: SQLite (file-based, zero-config)")
+    _info("Default: SQLite (zero-config)")
     val = questionary.text(
         f"DATABASE_URL:",
         default=default,
@@ -302,7 +301,7 @@ def configure_redis() -> str:
 
 
 def configure_admin() -> tuple[str, str, str]:
-    _section("Admin Dashboard (opsional)")
+    _section("Admin Dashboard")
     enable = questionary.confirm(
         "Aktifkan admin dashboard?",
         default=True,
@@ -357,10 +356,10 @@ def write_env(
     if exists:
         backup = ROOT / ".env.backup"
         shutil.copy2(env_path, backup)
-        _info(".env yang lama disalin ke .env.backup")
+        _info(".env lama dicopy ke .env.backup")
 
     lines = [
-        f"# SAFIA environment — generated by setup.py",
+        f"# SAFIA .env",
         f"TELEGRAM_BOT_TOKEN={telegram_token}",
         f"",
         f"# AI Provider: {provider}",
@@ -375,12 +374,12 @@ def write_env(
     if groq_whisper_key:
         lines.append(f"GROQ_API_KEY={groq_whisper_key}")
     else:
-        lines.append(f"# GROQ_API_KEY=  (tidak diset — voice message dinonaktifkan)")
+        lines.append(f"# GROQ_API_KEY=  (tidak diset, voice dinonaktifkan)")
 
     if serpapi_key:
         lines.append(f"SERPAPI_KEY={serpapi_key}")
     else:
-        lines.append(f"# SERPAPI_KEY=  (tidak diset — pencarian berita dinonaktifkan)")
+        lines.append(f"# SERPAPI_KEY=  (tidak diset, pencarian dinonaktifkan)")
 
     lines += [
         f"",
@@ -396,7 +395,7 @@ def write_env(
     ]
 
     env_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    _success(f".env berhasil dibuat di {env_path}")
+    _success(f".env tersimpan")
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -421,7 +420,7 @@ def main() -> None:
     check_uv()
 
     if not (ROOT / ".venv").exists():
-        with console.status("[bold bright_blue]Menjalankan uv sync...[/bold bright_blue]"):
+        with console.status("[bold bright_blue]uv sync...[/bold bright_blue]"):
             os.system("uv sync")
 
     check_redis()
@@ -462,7 +461,7 @@ def main() -> None:
 
     # Write
     console.print()
-    _section("Menyimpan Konfigurasi")
+    _section("Simpan Konfigurasi")
     write_env(
         telegram_token,
         provider,
@@ -484,14 +483,14 @@ def main() -> None:
             Align.center(
                 Text("Setup Selesai!", style="bold green")
                 + Text("\n\n")
-                + Text("Jalankan bot:", style="dim")
-                + Text("\n  uv run python main.py", style="bright_cyan")
-                + Text("\n\n")
-                + Text("Dev mode (auto-reload):", style="dim")
-                + Text("\n  uv run python run_dev.py", style="bright_cyan")
-                + Text("\n\n")
-                + Text("Admin dashboard:", style="dim")
-                + Text("\n  uv run python admin_dashboard.py", style="bright_cyan"),
+                + Text("Bot:", style="dim")
+                + Text("  uv run python main.py", style="bright_cyan")
+                + Text("\n")
+                + Text("Dev:", style="dim")
+                + Text("  uv run python run_dev.py", style="bright_cyan")
+                + Text("\n")
+                + Text("Admin:", style="dim")
+                + Text("  uv run python admin_dashboard.py", style="bright_cyan"),
                 vertical="middle",
             ),
             border_style="green",
