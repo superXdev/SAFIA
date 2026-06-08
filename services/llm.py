@@ -41,8 +41,8 @@ WIB = timezone(timedelta(hours=7))
 REMINDER_POLISH_MAX_INPUT_CHARS = 4000
 REMINDER_POLISH_MAX_OUTPUT_TOKENS = 380
 
-_REMINDER_POLISH_SYSTEM = """Kamu adalah SAFIA — asisten keuangan di Telegram (Bahasa Indonesia).
-Tugas: ubah "isi mentah pengingat" jadi satu pesan singkat untuk user.
+_REMINDER_POLISH_SYSTEM = """Kamu adalah SAFIA — asisten keuangan di Telegram.
+Tugas: ubah "isi mentah pengingat" jadi satu pesan singkat untuk user. Balas dalam bahasa yang sama dengan isi mentah pengingat.
 
 Aturan:
 - Santai dan natural, 2–5 kalimat ATAU paling banyak 6 bullet (• atau -), satu ide per baris.
@@ -144,7 +144,6 @@ async def transcribe(audio_path: Path) -> str:
             result = await client.audio.transcriptions.create(
                 file=f,
                 model="whisper-large-v3",
-                language="id",
             )
         return result.text
     except Exception:
