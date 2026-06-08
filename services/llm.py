@@ -25,6 +25,7 @@ class _SafeTransport(httpx.AsyncHTTPTransport):
     async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
         # Lunos blocks requests carrying OpenAI SDK's default UA and Accept headers.
         request.headers["user-agent"] = "SAFIA/1.0"
+        request.headers["x-app-id"] = "SAFIA"
         request.headers.pop("accept", None)
         return await super().handle_async_request(request)
 
