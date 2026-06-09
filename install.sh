@@ -379,22 +379,56 @@ check_redis() {
         return 0
     fi
 
+    local redis_installed=false
+
     if command -v redis-server >/dev/null 2>&1; then
+        redis_installed=true
+    elif [ -x /usr/sbin/redis-server ]; then
+        redis_installed=true
+    elif [ -x /usr/bin/redis-server ]; then
+        redis_installed=true
+    elif [ -x /usr/local/bin/redis-server ]; then
+        redis_installed=true
+    elif [ -x /opt/homebrew/bin/redis-server ]; then
+        redis_installed=true
+    elif command -v systemctl >/dev/null 2>&1; then
+        if systemctl list-unit-files redis.service 2>/dev/null | grep -q redis; then
+            redis_installed=true
+        elif systemctl list-unit-files redis-server.service 2>/dev/null | grep -q redis; then
+            redis_installed=true
+        fi
+    fi
+    if [ "$redis_installed" = false ]; then
+        if command -v rpm >/dev/null 2>&1 && rpm -q redis >/dev/null 2>&1; then
+            redis_installed=true
+        elif command -v dpkg >/dev/null 2>&1 && dpkg -l redis-server >/dev/null 2>&1; then
+            redis_installed=true
+        fi
+    fi
+
+    if [ "$redis_installed" = true ]; then
         log_info "Redis is installed but not running — starting it..."
         if command -v systemctl >/dev/null 2>&1; then
-            sudo systemctl start redis redis-server 2>/dev/null || \
-                sudo systemctl start valkey 2>/dev/null || true
+            sudo systemctl start redis 2>/dev/null || \
+            sudo systemctl start redis-server 2>/dev/null || \
+            sudo systemctl start valkey 2>/dev/null || \
+            systemctl start redis 2>/dev/null || \
+            systemctl start redis-server 2>/dev/null || true
         elif command -v brew >/dev/null 2>&1; then
             brew services start redis 2>/dev/null || \
                 brew services start valkey 2>/dev/null || true
         else
-            redis-server --daemonize yes 2>/dev/null || true
+            redis-server --daemonize yes 2>/dev/null || \
+            /usr/sbin/redis-server --daemonize yes 2>/dev/null || \
+            /usr/bin/redis-server --daemonize yes 2>/dev/null || true
         fi
-        sleep 1
+        sleep 2
         if redis-cli ping >/dev/null 2>&1; then
             log_success "Redis started"
             return 0
         fi
+        log_warn "Redis installed but failed to start. Will retry later."
+        return 0
     fi
 
     log_info "Redis not found — installing automatically..."
@@ -468,22 +502,36 @@ check_redis() {
             ;;
     esac
 
+    local redis_bin=""
     if command -v redis-server >/dev/null 2>&1; then
+        redis_bin="redis-server"
+    elif [ -x /usr/sbin/redis-server ]; then
+        redis_bin="/usr/sbin/redis-server"
+    elif [ -x /usr/bin/redis-server ]; then
+        redis_bin="/usr/bin/redis-server"
+    elif [ -x /opt/homebrew/bin/redis-server ]; then
+        redis_bin="/opt/homebrew/bin/redis-server"
+    fi
+
+    if [ -n "$redis_bin" ]; then
         log_info "Starting Redis..."
         if command -v systemctl >/dev/null 2>&1; then
-            sudo systemctl enable --now redis redis-server 2>/dev/null || \
-                sudo systemctl enable --now valkey 2>/dev/null || true
+            sudo systemctl enable --now redis 2>/dev/null || \
+            sudo systemctl enable --now redis-server 2>/dev/null || \
+            sudo systemctl enable --now valkey 2>/dev/null || \
+            systemctl enable --now redis 2>/dev/null || \
+            systemctl enable --now redis-server 2>/dev/null || true
         elif command -v brew >/dev/null 2>&1; then
             brew services start redis 2>/dev/null || \
                 brew services start valkey 2>/dev/null || true
         else
-            redis-server --daemonize yes 2>/dev/null || true
+            "$redis_bin" --daemonize yes 2>/dev/null || true
         fi
-        sleep 1
+        sleep 2
         if redis-cli ping >/dev/null 2>&1; then
             log_success "Redis installed and running"
         else
-            log_warn "Redis installed but failed to start. Try: redis-server --daemonize yes"
+            log_warn "Redis installed but failed to start. Try: $redis_bin --daemonize yes"
         fi
     else
         log_warn "Could not install Redis automatically."
