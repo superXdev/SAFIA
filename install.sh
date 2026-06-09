@@ -108,7 +108,19 @@ while [[ $# -gt 0 ]]; do
             exit 0
             ;;
         *)
+            SAFIA_SUBCMDS="setup config start stop restart status logs test update uninstall"
+            for _cmd in $SAFIA_SUBCMDS; do
+                if [ "$1" = "$_cmd" ]; then
+                    if [ -x "$HOME/.local/bin/safia" ]; then
+                        exec "$HOME/.local/bin/safia" "$@"
+                    fi
+                    echo "SAFIA is not installed yet. Run without arguments to install first:"
+                    echo "  $0"
+                    exit 1
+                fi
+            done
             echo "Unknown option: $1"
+            echo "Run '$0 --help' for usage."
             exit 1
             ;;
     esac
@@ -147,15 +159,28 @@ prompt_yes_no() {
         *) prompt_suffix="[y/N]" ;;
     esac
 
-    if [ "$NON_INTERACTIVE" = true ] || [ ! -t 0 ]; then
+    if [ "$NON_INTERACTIVE" = true ]; then
         case "$default" in
             [yY]|[yY][eE][sS]|1) return 0 ;;
             *) return 1 ;;
         esac
     fi
 
-    printf "%s %s " "$question" "$prompt_suffix"
-    IFS= read -r answer || answer=""
+    if [ ! -t 0 ] && [ ! -t 1 ]; then
+        if [ -r /dev/tty ] && [ -w /dev/tty ]; then
+            printf "%s %s " "$question" "$prompt_suffix" > /dev/tty
+            IFS= read -r answer < /dev/tty || answer=""
+        else
+            case "$default" in
+                [yY]|[yY][eE][sS]|1) return 0 ;;
+                *) return 1 ;;
+            esac
+        fi
+    else
+        printf "%s %s " "$question" "$prompt_suffix"
+        IFS= read -r answer || answer=""
+    fi
+
     answer="${answer#"${answer%%[![:space:]]*}"}"
     answer="${answer%"${answer##*[![:space:]]}"}"
 
@@ -785,7 +810,11 @@ run_setup_wizard() {
     echo ""
     log_info "Launching setup wizard..."
     cd "$INSTALL_DIR"
-    "$UV_CMD" run python scripts/setup.py
+    if [ -r /dev/tty ] && [ -w /dev/tty ]; then
+        "$UV_CMD" run python scripts/setup.py < /dev/tty
+    else
+        "$UV_CMD" run python scripts/setup.py
+    fi
 }
 
 # ============================================================================
