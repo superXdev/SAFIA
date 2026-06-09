@@ -48,7 +48,6 @@ fi
 PYTHON_VERSION="3.12"
 
 USE_VENV=true
-RUN_SETUP=true
 BRANCH="main"
 NON_INTERACTIVE=false
 
@@ -57,10 +56,6 @@ while [[ $# -gt 0 ]]; do
     case $1 in
         --no-venv)
             USE_VENV=false
-            shift
-            ;;
-        --skip-setup)
-            RUN_SETUP=false
             shift
             ;;
         --branch|-b)
@@ -87,7 +82,6 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "Options:"
             echo "  --no-venv          Skip dependency install"
-            echo "  --skip-setup       Skip interactive setup wizard"
             echo "  --branch NAME      Git branch to install (default: main)"
             echo "  --dir PATH         Custom install directory (default: ~/.safia/safia)"
             echo "  --safia-home PATH  Data/config directory (default: ~/.safia)"
@@ -573,6 +567,41 @@ generate_daemon_control_functions() {
         linux)
             cat << 'DAEMON_LINUX'
 safia_start() {
+    local service_dir="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
+    local service_file="$service_dir/safia.service"
+
+    if [ ! -f "$service_file" ]; then
+        if [ ! -f "$INSTALL_DIR/.env" ]; then
+            echo "✗ No .env found. Run 'safia setup' first to configure."
+            return 1
+        fi
+        mkdir -p "$service_dir"
+        mkdir -p "$SAFIA_HOME/logs"
+        cat > "$service_file" << 'SVC'
+[Unit]
+Description=SAFIA Telegram Bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=__INSTALL_DIR__
+ExecStart=__INSTALL_DIR__/.venv/bin/python main.py
+Restart=always
+RestartSec=15
+Environment=PYTHONUNBUFFERED=1
+StandardOutput=append:__SAFIA_HOME__/logs/bot.log
+StandardError=append:__SAFIA_HOME__/logs/bot.log
+
+[Install]
+WantedBy=default.target
+SVC
+        sed -e "s|__INSTALL_DIR__|$INSTALL_DIR|g" -e "s|__SAFIA_HOME__|$SAFIA_HOME|g" "$service_file" > "${service_file}.tmp" && mv "${service_file}.tmp" "$service_file"
+        systemctl --user daemon-reload
+        systemctl --user enable safia.service
+        echo "→ Daemon configured (auto-start on boot enabled)."
+    fi
+
     systemctl --user start safia.service 2>/dev/null && \
         echo "✓ SAFIA bot started." || \
         echo "✗ Failed to start. Check: systemctl --user status safia"
@@ -609,14 +638,58 @@ DAEMON_LINUX
         macos)
             cat << 'DAEMON_MACOS'
 safia_start() {
+    local plist_file="$HOME/Library/LaunchAgents/com.safia.bot.plist"
+
+    if [ ! -f "$plist_file" ]; then
+        if [ ! -f "$INSTALL_DIR/.env" ]; then
+            echo "✗ No .env found. Run 'safia setup' first to configure."
+            return 1
+        fi
+        mkdir -p "$HOME/Library/LaunchAgents"
+        mkdir -p "$SAFIA_HOME/logs"
+        cat > "$plist_file" << 'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.safia.bot</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>__INSTALL_DIR__/.venv/bin/python</string>
+        <string>main.py</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>__INSTALL_DIR__</string>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>__SAFIA_HOME__/logs/bot.log</string>
+    <key>StandardErrorPath</key>
+    <string>__SAFIA_HOME__/logs/bot.log</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PYTHONUNBUFFERED</key>
+        <string>1</string>
+    </dict>
+</dict>
+</plist>
+PLIST
+        sed -e "s|__INSTALL_DIR__|$INSTALL_DIR|g" -e "s|__SAFIA_HOME__|$SAFIA_HOME|g" "$plist_file" > "${plist_file}.tmp" && mv "${plist_file}.tmp" "$plist_file"
+        echo "→ Daemon configured (auto-start on login enabled)."
+    fi
+
     if launchctl list com.safia.bot &>/dev/null; then
         echo "SAFIA is already running."
         return 0
     fi
-    launchctl bootstrap "gui/$UID" "$HOME/Library/LaunchAgents/com.safia.bot.plist" 2>/dev/null && \
-        launchctl kickstart "gui/$UID/com.safia.bot" && \
+    launchctl bootstrap "gui/$UID" "$plist_file" 2>/dev/null
+    launchctl kickstart "gui/$UID/com.safia.bot" 2>/dev/null && \
         echo "✓ SAFIA bot started." || \
-        echo "✗ Failed to start."
+        echo "✗ Failed to start. Check logs: safia logs"
 }
 
 safia_stop() {
@@ -790,32 +863,6 @@ WRAPPER_BODY
     fi
 }
 
-# ── Run setup wizard ────────────────────────────────────────────────────────
-
-run_setup_wizard() {
-    if [ "$RUN_SETUP" = false ]; then
-        log_info "Skipping setup wizard (--skip-setup)."
-        log_info "You must create $INSTALL_DIR/.env manually before running the bot."
-        return 0
-    fi
-
-    if [ -f "$INSTALL_DIR/.env" ]; then
-        log_info "Existing .env found at $INSTALL_DIR/.env"
-        if ! prompt_yes_no "Re-run setup wizard?" "no"; then
-            log_info "Skipping setup. Use 'safia setup' or 'safia config' to change settings later."
-            return 0
-        fi
-    fi
-
-    echo ""
-    log_info "Launching setup wizard..."
-    cd "$INSTALL_DIR"
-    if [ -r /dev/tty ] && [ -w /dev/tty ]; then
-        "$UV_CMD" run python scripts/setup.py < /dev/tty
-    else
-        "$UV_CMD" run python scripts/setup.py
-    fi
-}
 
 # ============================================================================
 # Main
@@ -838,20 +885,24 @@ check_redis
 clone_repo
 install_deps
 install_safia_command
-run_setup_wizard
-install_daemon
 
 echo ""
 echo -e "${GREEN}${BOLD}═══════════════════════════════════════════════════════════${NC}"
 echo -e "${GREEN}${BOLD}  SAFIA installed successfully!${NC}"
 echo ""
-echo -e "  Status:             ${BOLD}safia status${NC}"
-echo -e "  View logs:          ${BOLD}safia logs${NC}"
-echo -e "  Restart:            ${BOLD}safia restart${NC}"
-echo -e "  Reconfigure:        ${BOLD}safia config${NC}"
-echo -e "  Update:             ${BOLD}safia update${NC}"
-echo -e "  Stop daemon:        ${BOLD}safia stop${NC}"
-echo -e "  Uninstall:          ${BOLD}safia uninstall${NC}"
+echo -e "  Next steps:"
+echo -e "    ${BOLD}1. safia setup${NC}    Configure .env (API keys, token, DB, Redis)"
+echo -e "    ${BOLD}2. safia start${NC}    Start the bot as a background daemon"
+echo ""
+echo -e "  Other commands:"
+echo -e "    ${BOLD}safia config${NC}     Edit configuration"
+echo -e "    ${BOLD}safia status${NC}     Show daemon status"
+echo -e "    ${BOLD}safia logs${NC}       Show recent logs"
+echo -e "    ${BOLD}safia restart${NC}    Restart the bot daemon"
+echo -e "    ${BOLD}safia stop${NC}       Stop the bot daemon"
+echo -e "    ${BOLD}safia update${NC}     Update and restart"
+echo -e "    ${BOLD}safia test${NC}       Run tests"
+echo -e "    ${BOLD}safia uninstall${NC}  Remove SAFIA completely"
 echo ""
 echo -e "${GREEN}${BOLD}═══════════════════════════════════════════════════════════${NC}"
 echo ""
