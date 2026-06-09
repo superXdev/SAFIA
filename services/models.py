@@ -109,9 +109,22 @@ class Reminder(Base):
         String(128), nullable=True, unique=True,
     )
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(),
+        DateTime(timezone=True),
+        server_default=func.now(),
     )
 
+
+class Setting(Base):
+    """Key-value settings store for runtime configuration."""
+    __tablename__ = "settings"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    key: Mapped[str] = mapped_column(String(128), unique=True, index=True, nullable=False)
+    value: Mapped[str] = mapped_column(String(4096), default="", nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+    )
 
 class KnowledgeDocument(Base):
     """Metadata for knowledge-base files; vectors live in Qdrant."""

@@ -1,5 +1,6 @@
 """Admin dashboard routes."""
 import asyncio
+import os
 from datetime import datetime
 from pathlib import Path
 
@@ -23,6 +24,13 @@ from services.database import (
     kb_delete_row,
     kb_get_by_id,
     kb_list_documents,
+)
+from services.db_settings import (
+    add_allowed_user,
+    get_access_mode,
+    get_allowed_users,
+    remove_allowed_user,
+    set_access_mode,
 )
 from services.knowledge.ingest import delete_kb_document, ingest_bytes
 
@@ -98,6 +106,57 @@ def users() -> str:
         now=now,
         rows=rows,
     )
+
+
+@bp.route("/settings")
+def settings() -> str:
+    now = datetime.now().strftime("%Y-%m-%d %H:%M")
+    mode = _loop.run_until_complete(get_access_mode())
+    allowed = _loop.run_until_complete(get_allowed_users())
+    env_vars = {k: v for k, v in sorted(os.environ.items()) if k.startswith(("LLM_", "TELEGRAM_", "DATABASE_", "REDIS_", "EMBEDDING_", "QDRANT_", "GROQ_", "ADMIN_", "REMINDER_", "KB_", "SERPAPI_", "COINGECKO_"))}
+    masked_vars = {}
+    for k, v in env_vars.items():
+        if any(x in k.upper() for x in ("KEY", "TOKEN", "PASSWORD", "SECRET")):
+            masked_vars[k] = v[:8] + "..." if len(v) > 8 else "***"
+        else:
+            masked_vars[k] = v
+    return render_template(
+        "settings.html",
+        title="SAFIA · Settings",
+        active="settings",
+        env_label="local",
+        now=now,
+        access_mode=mode,
+        allowed_users=allowed,
+        env_vars=masked_vars,
+        auth_enabled=bool(ADMIN_PASSWORD),
+    )
+
+
+@bp.route("/settings/access", methods=["POST"])
+def settings_access():
+    action = request.form.get("action", "")
+    if action == "mode":
+        mode = request.form.get("mode", "all")
+        _loop.run_until_complete(set_access_mode(mode))
+        flash(f"Access mode set to '{mode}'.", "success")
+    elif action == "add":
+        try:
+            tid = int(request.form.get("telegram_id", "0"))
+        except ValueError:
+            flash("Invalid Telegram ID.", "error")
+            return redirect(url_for("admin.settings"))
+        _loop.run_until_complete(add_allowed_user(tid))
+        flash(f"User {tid} added to allowlist.", "success")
+    elif action == "remove":
+        try:
+            tid = int(request.form.get("telegram_id", "0"))
+        except ValueError:
+            flash("Invalid Telegram ID.", "error")
+            return redirect(url_for("admin.settings"))
+        _loop.run_until_complete(remove_allowed_user(tid))
+        flash(f"User {tid} removed from allowlist.", "success")
+    return redirect(url_for("admin.settings"))
 
 
 @bp.route("/knowledge")

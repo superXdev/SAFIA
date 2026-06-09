@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+  .settings-grid {
+    display: grid;
+    gap: 24px;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+  @media (max-width: 860px) { .settings-grid { grid-template-columns: 1fr; } }
+  .settings-section { margin-bottom: 20px; }
+  .settings-section:last-child { margin-bottom: 0; }
+  .section-title {
+    font-size: 11px;
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .setting-row:last-child { border-bottom: none; }
+  .setting-key { font-family: var(--mono); font-size: 12px; color: var(--text-dim); }
+  .setting-val { font-family: var(--mono); font-size: 11px; color: var(--text-muted); max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mode-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+  .mode-btn {
+    flex: 1;
+    padding: 10px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg-hover);
+    color: var(--text-dim);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .mode-btn:hover { border-color: var(--border-hover); }
+  .mode-btn-active { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+  .allowlist-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: var(--bg-hover);
+    margin-bottom: 4px;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .allowlist-item .btn-remove {
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--red-dim);
+    background: var(--red-dim);
+    color: var(--red);
+    font-size: 10px;
+    font-family: var(--mono);
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .allowlist-item .btn-remove:hover { background: rgba(220, 38, 38, 0.2); }
+  .add-form { display: flex; gap: 8px; margin-top: 12px; }
+  .add-form input {
+    flex: 1;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+  .add-form .btn-add {
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--accent);
+    background: var(--accent-dim);
+    color: var(--accent);
+    font-size: 13px;
+    font-family: var(--mono);
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .add-form .btn-add:hover { background: rgba(124, 58, 237, 0.2); }
+  .kb-flash {
+    padding: 12px 16px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    border: 1px solid;
+    margin-bottom: 12px;
+  }
+  .kb-flash.success { border-color: var(--green-dim); background: var(--green-dim); color: var(--green); }
+  .kb-flash.error   { border-color: var(--red-dim);   background: var(--red-dim);   color: var(--red); }
+  .empty-state { padding: 16px; color: var(--text-muted); font-size: 13px; text-align: center; }
+</style>
+
+<div class="page-header header-row">
+  <div>
+    <h1>Settings</h1>
+    <p>Access control and system configuration</p>
+  </div>
+  <div class="header-meta">
+    <span class="meta-item">{{ now }}</span>
+  </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="kb-flash {{ category }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<div class="settings-grid">
+  <div class="card card-accent-purple d1">
+    <div class="card-top">
+      <span class="card-label">Access Control</span>
+      <span class="tag tag-dot {% if access_mode == 'all' %}tag-green{% else %}tag-amber{% endif %}">{{ access_mode }}</span>
+    </div>
+
+    <div class="settings-section">
+      <div class="section-title">Mode</div>
+      <form method="post" action="{{ url_for('admin.settings_access') }}">
+        <input type="hidden" name="action" value="mode" />
+        <div class="mode-toggle">
+          <button type="submit" name="mode" value="all" class="mode-btn {% if access_mode == 'all' %}mode-btn-active{% endif %}">All users</button>
+          <button type="submit" name="mode" value="allowlist" class="mode-btn {% if access_mode == 'allowlist' %}mode-btn-active{% endif %}">Allowlist only</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="settings-section">
+      <div class="section-title">Allowed Telegram IDs ({{ allowed_users|length }})</div>
+      {% if not allowed_users %}
+      <div class="empty-state">No users in allowlist.</div>
+      {% else %}
+      {% for uid in allowed_users %}
+      <div class="allowlist-item">
+        <span>{{ uid }}</span>
+        <form method="post" action="{{ url_for('admin.settings_access') }}" style="display:inline;">
+          <input type="hidden" name="action" value="remove" />
+          <input type="hidden" name="telegram_id" value="{{ uid }}" />
+          <button type="submit" class="btn-remove">Remove</button>
+        </form>
+      </div>
+      {% endfor %}
+      {% endif %}
+
+      <form class="add-form" method="post" action="{{ url_for('admin.settings_access') }}">
+        <input type="hidden" name="action" value="add" />
+        <input type="text" name="telegram_id" placeholder="Telegram ID" required />
+        <button type="submit" class="btn-add">Add</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="card card-accent-blue d2">
+    <div class="card-top">
+      <span class="card-label">Environment</span>
+      <span class="tag tag-dim">{{ env_vars|length }} vars</span>
+    </div>
+    <div class="settings-section">
+      {% for key, val in env_vars.items() %}
+      <div class="setting-row" title="{{ val }}">
+        <span class="setting-key">{{ key }}</span>
+        <span class="setting-val">{{ val }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

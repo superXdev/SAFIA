@@ -91,6 +91,7 @@ while [[ $# -gt 0 ]]; do
             echo "After install, use the 'safia' command:"
             echo "  safia setup      Re-run setup wizard"
             echo "  safia config     Edit configuration"
+            echo "  safia access     Manage bot access control"
             echo "  safia start      Start the bot daemon"
             echo "  safia stop       Stop the bot daemon"
             echo "  safia restart    Restart the bot daemon"
@@ -102,7 +103,7 @@ while [[ $# -gt 0 ]]; do
             exit 0
             ;;
         *)
-            SAFIA_SUBCMDS="setup config start stop restart status logs test update uninstall"
+            SAFIA_SUBCMDS="setup config access start stop restart status logs test update uninstall"
             for _cmd in $SAFIA_SUBCMDS; do
                 if [ "$1" = "$_cmd" ]; then
                     if [ -x "$HOME/.local/bin/safia" ]; then
@@ -906,6 +907,10 @@ case "${1:-}" in
         shift
         exec "$INSTALL_DIR/.venv/bin/python" scripts/config.py "$@"
         ;;
+    access)
+        shift
+        exec "$INSTALL_DIR/.venv/bin/python" -m services.db_settings_cli "$@"
+        ;;
     start)
         safia_start
         ;;
@@ -965,6 +970,7 @@ case "${1:-}" in
         echo "Commands:"
         echo "  setup      Re-run the interactive setup wizard (create/update .env)"
         echo "  config     View and edit configuration"
+        echo "  access     Manage bot access control (allow/deny users)"
         echo "  start      Start the bot daemon (auto-starts on reboot)"
         echo "  stop       Stop the bot daemon"
         echo "  restart    Restart the bot daemon"
@@ -978,7 +984,7 @@ case "${1:-}" in
         ;;
     *)
         echo "Usage: safia <command>"
-        echo "Commands: setup | config | start | stop | restart | status | logs | test | update | uninstall | help"
+        echo "Commands: setup | config | access | start | stop | restart | status | logs | test | update | uninstall | help"
         exit 1
         ;;
 esac

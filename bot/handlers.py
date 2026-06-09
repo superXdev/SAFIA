@@ -18,8 +18,24 @@ from services.chat_history import (
     save_history,
 )
 from services.database import get_or_create_user
+from services.db_settings import is_user_allowed
 from services.document_vision import extract_document_text, parse_final_amount
 from config import LLM_CHAT_API_KEY
+
+
+async def _check_access(user_id: int) -> bool:
+    """Return True if user is allowed. Send rejection message if not."""
+    if await is_user_allowed(user_id):
+        return True
+    return False
+
+
+async def _reject_unauthorized(message: Message) -> None:
+    await message.answer(
+        "Access denied — you are not authorized to use this bot.\n"
+        "Contact the bot owner to request access.",
+        parse_mode=ParseMode.MARKDOWN,
+    )
 
 
 def _build_status_updater(progress_message: Message) -> Callable[[str], Awaitable[None]]:
@@ -44,6 +60,10 @@ def _build_status_updater(progress_message: Message) -> Callable[[str], Awaitabl
 
 
 async def handle_start(message: Message) -> None:
+    if not await _check_access(message.from_user.id):
+        await _reject_unauthorized(message)
+        return
+
     await clear_history(message.chat.id)
 
     user = message.from_user
@@ -90,6 +110,10 @@ async def handle_bantuan(message: Message) -> None:
 
 
 async def handle_message(message: Message) -> None:
+    if not await _check_access(message.from_user.id):
+        await _reject_unauthorized(message)
+        return
+
     allowed, remaining = await check_and_increment_rate_limit(message.from_user.id)
     if not allowed:
         await message.answer(
@@ -114,6 +138,9 @@ async def handle_message(message: Message) -> None:
 
 
 async def handle_voice(message: Message) -> None:
+    if not await _check_access(message.from_user.id):
+        await _reject_unauthorized(message)
+        return
     allowed, remaining = await check_and_increment_rate_limit(message.from_user.id)
     if not allowed:
         await message.answer(
@@ -158,6 +185,10 @@ async def handle_voice(message: Message) -> None:
 
 
 async def handle_photo(message: Message) -> None:
+    if not await _check_access(message.from_user.id):
+        await _reject_unauthorized(message)
+        return
+
     if not LLM_CHAT_API_KEY:
         await message.answer(
             "Document photo scanning is not enabled. Contact admin.",
