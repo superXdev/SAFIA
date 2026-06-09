@@ -1,8 +1,8 @@
 # SAFIA
 
-AI-powered personal finance assistant on Telegram. Tracks expenses, manages investment portfolios, and provides financial education — all in casual Bahasa Indonesia.
+An AI-powered Telegram bot for personal finance. Chat naturally to track expenses, manage debts, monitor investments, get market data, and search financial news — all in one place.
 
-Built with [aiogram 3](https://docs.aiogram.dev/) and local-first architecture: on-disk vector storage, ONNX embeddings, SQLite.
+Runs entirely on your machine: SQLite for data, Qdrant on-disk for document search, ONNX for local embeddings. No cloud dependencies besides the LLM API and Firecrawl.
 
 ## Features
 
