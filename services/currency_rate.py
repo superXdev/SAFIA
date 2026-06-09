@@ -3,11 +3,9 @@ import logging
 
 import requests
 
-from config import RATE_CACHE_KEY_PREFIX, RATE_CACHE_TTL_SECONDS
+from config import CURRENCY_RATE_URL, RATE_CACHE_KEY_PREFIX, RATE_CACHE_TTL_SECONDS
 from services.price_cache import get_cached, set_cached
 
-# Frankfurter.app — free, no API key, supports many currencies
-BASE_URL = "https://api.frankfurter.app/latest"
 
 
 def _normalize_currency(code: str) -> str:
@@ -37,7 +35,7 @@ def get_currency_rate(from_currency: str, to_currency: str) -> float | None:
         return float(cached["rate"])
     try:
         resp = requests.get(
-            BASE_URL,
+            CURRENCY_RATE_URL,
             params={"from": fr, "to": to},
             timeout=10,
         )

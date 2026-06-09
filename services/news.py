@@ -8,10 +8,14 @@ import requests
 from openai import AsyncOpenAI
 from scrapling.fetchers import Fetcher
 
-from config import LLM_CHAT_API_KEY, LLM_CHAT_BASE_URL, LLM_MODEL as NEWS_SUMMARY_MODEL
+from config import (
+    LLM_CHAT_API_KEY,
+    LLM_CHAT_BASE_URL,
+    LLM_MODEL as NEWS_SUMMARY_MODEL,
+    SERPAPI_BASE_URL,
+    SERPAPI_KEY,
+)
 
-SERPAPI_KEY = os.environ.get("SERPAPI_KEY")
-SERPAPI_BASE = "https://serpapi.com/search"
 MAX_PAGE_CHARS = 6000
 
 _groq_client: AsyncOpenAI | None = None
@@ -52,7 +56,7 @@ def _serpapi_search(query: str, num: int = 10) -> list[dict]:
         "gl": "id",
         "hl": "id",
     }
-    resp = requests.get(SERPAPI_BASE, params=params, timeout=30)
+    resp = requests.get(SERPAPI_BASE_URL, params=params, timeout=30)
     resp.raise_for_status()
     return resp.json().get("organic_results", [])
 

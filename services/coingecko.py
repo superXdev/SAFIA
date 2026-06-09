@@ -7,15 +7,14 @@ from typing import Any
 import requests
 
 from config import (
+    COINGECKO_API_KEY,
+    COINGECKO_BASE_URL,
     COINGECKO_CACHE_TTL_COIN,
     COINGECKO_CACHE_TTL_MARKETS,
     COINGECKO_CACHE_TTL_SEARCH,
     COINGECKO_CACHE_TTL_TRENDING,
 )
 from services.price_cache import get_cached, set_cached
-
-COINGECKO_BASE_URL = "https://api.coingecko.com/api/v3"
-COINGECKO_API_KEY = os.environ.get("COINGECKO_API_KEY")  # optional Demo tier key
 
 
 def _headers() -> dict[str, str]:

@@ -6,33 +6,6 @@ from config import EMBEDDING_API_KEY
 from services.knowledge.embeddings import embed_query
 from services.knowledge.qdrant_kb import search_chunks
 
-SCHEMAS = [
-    {
-        "type": "function",
-        "function": {
-            "name": "knowledge_search",
-            "description": (
-                "Cari cuplikan teks relevan dari knowledge base (dokumen yang diunggah admin). "
-                "Gunakan ketika user bertanya tentang kebijakan produk, FAQ internal, prosedur, "
-                "atau fakta yang kemungkinan ada di dokumen tersebut — bukan untuk harga pasar "
-                "real-time atau berita terkini (pakai tool lain). "
-                "Hasil berupa teks mentah untuk kamu rangkum ke user dengan bahasa natural."
-            ),
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "query": {
-                        "type": "string",
-                        "description": "Pertanyaan atau kata kunci pencarian dalam bahasa yang sama dengan user",
-                    },
-                },
-                "required": ["query"],
-            },
-        },
-    },
-]
-
-
 async def handle_knowledge_search(arguments: dict[str, Any], user_id: int) -> str:
     _ = user_id
     query = (arguments.get("query") or "").strip()

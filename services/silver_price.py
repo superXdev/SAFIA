@@ -5,10 +5,8 @@ from typing import Any
 
 import requests
 
-from config import PRICE_CACHE_KEY_SILVER
+from config import PRICE_CACHE_KEY_SILVER, SILVER_PRICE_URL
 from services.price_cache import get_cached, set_cached
-
-SILVER_URL = "https://id.bullion-rates.com/silver/IDR/spot-price.htm"
 
 BROWSER_HEADERS = {
     "User-Agent": (
@@ -69,7 +67,7 @@ def fetch_silver_price_idr() -> dict[str, Any]:
     if cached is not None:
         return cached
     try:
-        resp = requests.get(SILVER_URL, headers=BROWSER_HEADERS, timeout=15)
+        resp = requests.get(SILVER_PRICE_URL, headers=BROWSER_HEADERS, timeout=15)
         resp.raise_for_status()
         html = resp.text
     except Exception:

@@ -5,10 +5,8 @@ from typing import Any
 
 import requests
 
-from config import PRICE_CACHE_KEY_GOLD
+from config import GOLD_PRICE_URL, PRICE_CACHE_KEY_GOLD
 from services.price_cache import get_cached, set_cached
-
-GOLD_URL = "https://harga-emas.org/"
 
 BROWSER_HEADERS = {
     "User-Agent": (
@@ -88,7 +86,7 @@ def fetch_gold_price_idr() -> list[dict[str, Any]]:
     if cached is not None:
         return cached
     try:
-        resp = requests.get(GOLD_URL, headers=BROWSER_HEADERS, timeout=15)
+        resp = requests.get(GOLD_PRICE_URL, headers=BROWSER_HEADERS, timeout=15)
         resp.raise_for_status()
         html = resp.text
     except Exception:

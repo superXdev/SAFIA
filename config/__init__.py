@@ -116,6 +116,18 @@ EMBEDDING_MODEL = os.environ.get("EMBEDDING_MODEL", "openai/text-embedding-3-sma
 EMBEDDING_VECTOR_SIZE = int(os.environ.get("EMBEDDING_VECTOR_SIZE", "384"))
 
 # -----------------------------------------------------------------------------
+# External API endpoints
+# -----------------------------------------------------------------------------
+GROQ_BASE_URL = os.environ.get("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
+SERPAPI_BASE_URL = os.environ.get("SERPAPI_BASE_URL", "https://serpapi.com/search")
+SERPAPI_KEY = os.environ.get("SERPAPI_KEY", "")
+COINGECKO_BASE_URL = os.environ.get("COINGECKO_BASE_URL", "https://api.coingecko.com/api/v3")
+COINGECKO_API_KEY = os.environ.get("COINGECKO_API_KEY", "")
+GOLD_PRICE_URL = os.environ.get("GOLD_PRICE_URL", "https://harga-emas.org/")
+SILVER_PRICE_URL = os.environ.get("SILVER_PRICE_URL", "https://id.bullion-rates.com/silver/IDR/spot-price.htm")
+CURRENCY_RATE_URL = os.environ.get("CURRENCY_RATE_URL", "https://api.frankfurter.app/latest")
+
+# -----------------------------------------------------------------------------
 # Knowledge base ingest
 # -----------------------------------------------------------------------------
 # Knowledge chunks are word-based (split on whitespace), not characters.

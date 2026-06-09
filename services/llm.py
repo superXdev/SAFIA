@@ -16,7 +16,7 @@ from openai import (
     RateLimitError,
 )
 
-from config import GROQ_API_KEY, LLM_CHAT_API_KEY, LLM_CHAT_BASE_URL, LLM_MODEL as MODEL
+from config import GROQ_API_KEY, GROQ_BASE_URL, LLM_CHAT_API_KEY, LLM_CHAT_BASE_URL, LLM_MODEL as MODEL
 from services.chat_history import mark_user_active_today
 from services.database import increment_daily_metrics
 from services.summaries import get_financial_summary, get_portfolio_summary
@@ -153,7 +153,7 @@ def get_groq_client() -> AsyncOpenAI:
     """Whisper transcription client — always uses Groq (requires GROQ_API_KEY)."""
     global _groq_client
     if _groq_client is None:
-        _groq_client = AsyncOpenAI(base_url="https://api.groq.com/openai/v1", api_key=GROQ_API_KEY)
+        _groq_client = AsyncOpenAI(base_url=GROQ_BASE_URL, api_key=GROQ_API_KEY)
     return _groq_client
 
 

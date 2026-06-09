@@ -1,25 +1,21 @@
-"""Tool registry — collects schemas and dispatches handlers."""
+"""Tool registry — collects schemas from schemas/ and dispatches handlers."""
 import json
 import logging
 from typing import Any
 
-from services.tools.assets import HANDLERS as ASSET_HANDLERS, SCHEMAS as ASSET_SCHEMAS
-from services.tools.crypto_market import HANDLERS as CRYPTO_MARKET_HANDLERS, SCHEMAS as CRYPTO_MARKET_SCHEMAS
-from services.tools.currency import HANDLERS as CURRENCY_HANDLERS, SCHEMAS as CURRENCY_SCHEMAS
-from services.tools.debts import HANDLERS as DEBT_HANDLERS, SCHEMAS as DEBT_SCHEMAS
-from services.tools.gold import HANDLERS as GOLD_HANDLERS, SCHEMAS as GOLD_SCHEMAS
-from services.tools.knowledge_search import HANDLERS as KNOWLEDGE_HANDLERS, SCHEMAS as KNOWLEDGE_SCHEMAS
-from services.tools.news_search import HANDLERS as NEWS_SEARCH_HANDLERS, SCHEMAS as NEWS_SEARCH_SCHEMAS
-from services.tools.prices import HANDLERS as PRICE_HANDLERS, SCHEMAS as PRICE_SCHEMAS
-from services.tools.records import HANDLERS as RECORD_HANDLERS, SCHEMAS as RECORD_SCHEMAS
-from services.tools.reminders import HANDLERS as REMINDER_HANDLERS, SCHEMAS as REMINDER_SCHEMAS
-from services.tools.silver import HANDLERS as SILVER_HANDLERS, SCHEMAS as SILVER_SCHEMAS
+from services.tools.schemas import TOOLS
 
-TOOLS = (
-    RECORD_SCHEMAS + DEBT_SCHEMAS + ASSET_SCHEMAS + GOLD_SCHEMAS
-    + SILVER_SCHEMAS + PRICE_SCHEMAS + CURRENCY_SCHEMAS + CRYPTO_MARKET_SCHEMAS
-    + NEWS_SEARCH_SCHEMAS + KNOWLEDGE_SCHEMAS + REMINDER_SCHEMAS
-)
+from services.tools.assets import HANDLERS as ASSET_HANDLERS
+from services.tools.crypto_market import HANDLERS as CRYPTO_MARKET_HANDLERS
+from services.tools.currency import HANDLERS as CURRENCY_HANDLERS
+from services.tools.debts import HANDLERS as DEBT_HANDLERS
+from services.tools.gold import HANDLERS as GOLD_HANDLERS
+from services.tools.knowledge_search import HANDLERS as KNOWLEDGE_HANDLERS
+from services.tools.news_search import HANDLERS as NEWS_SEARCH_HANDLERS
+from services.tools.prices import HANDLERS as PRICE_HANDLERS
+from services.tools.records import HANDLERS as RECORD_HANDLERS
+from services.tools.reminders import HANDLERS as REMINDER_HANDLERS
+from services.tools.silver import HANDLERS as SILVER_HANDLERS
 
 _HANDLERS: dict[str, Any] = {
     **RECORD_HANDLERS,
