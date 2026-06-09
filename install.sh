@@ -546,7 +546,7 @@ install_daemon() {
                 install_systemd_daemon
             else
                 log_warn "systemd user services not available. Cannot set up daemon."
-                log_info "Run the bot manually: cd $INSTALL_DIR && uv run python main.py"
+                log_info "Run the bot manually: cd $INSTALL_DIR && $INSTALL_DIR/.venv/bin/python main.py"
             fi
             ;;
         macos)
@@ -554,7 +554,7 @@ install_daemon() {
                 install_launchd_daemon
             else
                 log_warn "launchd not available. Cannot set up daemon."
-                log_info "Run the bot manually: cd $INSTALL_DIR && uv run python main.py"
+                log_info "Run the bot manually: cd $INSTALL_DIR && $INSTALL_DIR/.venv/bin/python main.py"
             fi
             ;;
     esac
@@ -759,11 +759,11 @@ cd "$INSTALL_DIR"
 case "${1:-}" in
     setup)
         shift
-        exec uv run python scripts/setup.py "$@"
+        exec "$INSTALL_DIR/.venv/bin/python" scripts/setup.py "$@"
         ;;
     config)
         shift
-        exec uv run python scripts/config.py "$@"
+        exec "$INSTALL_DIR/.venv/bin/python" scripts/config.py "$@"
         ;;
     start)
         safia_start
@@ -781,14 +781,14 @@ case "${1:-}" in
         safia_logs "${2:-30}"
         ;;
     test)
-        exec uv run pytest tests/ -v "$@"
+        exec "$INSTALL_DIR/.venv/bin/python" -m pytest tests/ -v "$@"
         ;;
     update)
         echo "→ Updating SAFIA..."
         git fetch origin main
         git checkout main
         git pull --ff-only origin main
-        uv sync
+        "$SAFIA_HOME/bin/uv" sync
         safia_restart
         echo "✓ SAFIA updated and restarted."
         ;;
