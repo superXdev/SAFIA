@@ -2,7 +2,7 @@
 import logging
 from typing import Any
 
-from config import EMBEDDING_API_KEY
+from config import EMBEDDING_API_KEY, EMBEDDING_LOCAL
 from services.knowledge.embeddings import embed_query
 from services.knowledge.qdrant_kb import search_chunks
 
@@ -12,10 +12,10 @@ async def handle_knowledge_search(arguments: dict[str, Any], user_id: int) -> st
     if not query:
         return "Parameter query kosong."
 
-    if not EMBEDDING_API_KEY:
+    if not EMBEDDING_LOCAL and not EMBEDDING_API_KEY:
         return (
-            "Knowledge base tidak dikonfigurasi (set EMBEDDING_API_KEY atau OPENROUTER_API_KEY "
-            "dan QDRANT_URL)."
+            "Knowledge base tidak dikonfigurasi (set EMBEDDING_API_KEY atau LLM_API_KEY "
+            "atau EMBEDDING_LOCAL=true)."
         )
 
     try:

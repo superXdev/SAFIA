@@ -2,34 +2,20 @@
 
 {% block content %}
 <style>
-  .settings-grid {
-    display: grid;
-    gap: 24px;
-    grid-template-columns: 1fr 1fr;
-    align-items: start;
-  }
-  @media (max-width: 860px) { .settings-grid { grid-template-columns: 1fr; } }
-  .settings-section { margin-bottom: 20px; }
-  .settings-section:last-child { margin-bottom: 0; }
-  .section-title {
-    font-size: 11px;
-    font-family: var(--mono);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--text-muted);
+  .kb-flash {
+    padding: 12px 16px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    border: 1px solid;
     margin-bottom: 12px;
   }
-  .setting-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 13px;
-  }
-  .setting-row:last-child { border-bottom: none; }
-  .setting-key { font-family: var(--mono); font-size: 12px; color: var(--text-dim); }
-  .setting-val { font-family: var(--mono); font-size: 11px; color: var(--text-muted); max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .kb-flash.success { border-color: var(--green-dim); background: var(--green-dim); color: var(--green); }
+  .kb-flash.error   { border-color: var(--red-dim);   background: var(--red-dim);   color: var(--red); }
+
+  .card { margin-bottom: 8px; }
+  .card:last-child { margin-bottom: 0; }
+
+  /* ── Access Control ── */
   .mode-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
   .mode-btn {
     flex: 1;
@@ -91,17 +77,182 @@
     transition: background 0.15s ease;
   }
   .add-form .btn-add:hover { background: rgba(124, 58, 237, 0.2); }
-  .kb-flash {
-    padding: 12px 16px;
-    border-radius: var(--radius);
-    font-size: 13px;
-    border: 1px solid;
-    margin-bottom: 12px;
-  }
-  .kb-flash.success { border-color: var(--green-dim); background: var(--green-dim); color: var(--green); }
-  .kb-flash.error   { border-color: var(--red-dim);   background: var(--red-dim);   color: var(--red); }
   .empty-state { padding: 16px; color: var(--text-muted); font-size: 13px; text-align: center; }
+  .help-box {
+    margin-top: 16px;
+    padding: 12px 14px;
+    border-radius: 6px;
+    background: var(--bg-hover);
+    border: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+  .help-box strong { color: var(--text); }
+  .help-box code {
+    background: var(--bg);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-family: var(--mono);
+  }
+
+  /* ── Accordion ── */
+  .accordion-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-dim);
+    width: 100%;
+    transition: color 0.15s ease;
+    font-family: inherit;
+  }
+  .accordion-header:hover { color: var(--text); }
+  .accordion-group.open > .accordion-header { color: var(--accent); }
+  .accordion-icon { width: 16px; height: 16px; flex-shrink: 0; opacity: 0.55; }
+  .accordion-group.open > .accordion-header .accordion-icon { opacity: 1; }
+  .accordion-arrow {
+    display: inline-block;
+    font-size: 10px;
+    transition: transform 0.2s ease;
+  }
+  .accordion-group.open > .accordion-header .accordion-arrow {
+    transform: rotate(90deg);
+  }
+  .accordion-body { display: none; padding: 0 14px 14px; }
+  .accordion-group.open > .accordion-body { display: block; }
+
+  .env-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .env-row:last-child { border-bottom: none; }
+  .env-key {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    flex-shrink: 0;
+    margin-right: 8px;
+  }
+  .env-key .set-badge {
+    display: inline-block;
+    font-size: 9px;
+    font-family: var(--mono);
+    color: var(--green);
+    margin-left: 4px;
+  }
+  .env-side {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 1;
+    min-width: 0;
+  }
+  .env-val {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .env-edit-btn {
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text-dim);
+    font-size: 10px;
+    font-family: var(--mono);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+  }
+  .env-edit-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .env-edit-row {
+    display: none;
+    width: 100%;
+    padding: 6px 0 2px;
+    gap: 8px;
+    align-items: center;
+  }
+  .env-edit-row.active { display: flex; }
+  .env-edit-row input, .env-edit-row select {
+    flex: 1;
+    padding: 5px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    min-width: 0;
+  }
+  .env-edit-row input:focus, .env-edit-row select:focus { border-color: var(--accent); outline: none; }
+  .env-edit-row .btn-save {
+    padding: 5px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--green-dim);
+    background: var(--green-dim);
+    color: var(--green);
+    font-size: 10px;
+    font-family: var(--mono);
+    cursor: pointer;
+  }
+  .env-edit-row .btn-save:hover { background: rgba(34, 197, 94, 0.2); }
+  .env-edit-row .btn-cancel {
+    padding: 5px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text-muted);
+    font-size: 10px;
+    font-family: var(--mono);
+    cursor: pointer;
+  }
 </style>
+
+<script>
+function toggleAccordion(el) {
+  el.closest(".accordion-group").classList.toggle("open");
+}
+
+function toggleEnvEdit(key) {
+  var row = document.getElementById("env-edit-" + key);
+  var display = document.getElementById("env-display-" + key);
+  var input = document.getElementById("env-input-" + key);
+  if (row.classList.contains("active")) {
+    row.classList.remove("active");
+    display.style.display = "";
+  } else {
+    row.classList.add("active");
+    display.style.display = "none";
+    if (input && input.tagName === "INPUT") {
+      input.value = input.getAttribute("data-current");
+    }
+    if (input) input.focus();
+  }
+}
+
+function cancelEnvEdit(key) {
+  var row = document.getElementById("env-edit-" + key);
+  var display = document.getElementById("env-display-" + key);
+  row.classList.remove("active");
+  display.style.display = "";
+}
+</script>
 
 <div class="page-header header-row">
   <div>
@@ -121,62 +272,119 @@
   {% endif %}
 {% endwith %}
 
-<div class="settings-grid">
-  <div class="card card-accent-purple d1">
-    <div class="card-top">
-      <span class="card-label">Access Control</span>
-      <span class="tag tag-dot {% if access_mode == 'all' %}tag-green{% else %}tag-amber{% endif %}">{{ access_mode }}</span>
-    </div>
+<!-- Access Control -->
+<div class="card card-accent-purple">
+  <div class="card-top">
+    <span class="card-label">Access Control</span>
+    <span class="tag tag-dot {% if access_mode == 'all' %}tag-green{% else %}tag-amber{% endif %}">{{ access_mode }}</span>
+  </div>
 
-    <div class="settings-section">
-      <div class="section-title">Mode</div>
-      <form method="post" action="{{ url_for('admin.settings_access') }}">
-        <input type="hidden" name="action" value="mode" />
-        <div class="mode-toggle">
-          <button type="submit" name="mode" value="all" class="mode-btn {% if access_mode == 'all' %}mode-btn-active{% endif %}">All users</button>
-          <button type="submit" name="mode" value="allowlist" class="mode-btn {% if access_mode == 'allowlist' %}mode-btn-active{% endif %}">Allowlist only</button>
+  <div style="margin-bottom:20px;">
+    <div style="font-size:11px;font-family:var(--mono);text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:12px;">Mode</div>
+    <form method="post" action="{{ url_for('admin.settings_access') }}">
+      <input type="hidden" name="action" value="mode" />
+      <div class="mode-toggle">
+        <button type="submit" name="mode" value="all" class="mode-btn {% if access_mode == 'all' %}mode-btn-active{% endif %}">All users</button>
+        <button type="submit" name="mode" value="allowlist" class="mode-btn {% if access_mode == 'allowlist' %}mode-btn-active{% endif %}">Allowlist only</button>
+      </div>
+    </form>
+  </div>
+
+  <div style="margin-bottom:20px;">
+    <div style="font-size:11px;font-family:var(--mono);text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:12px;">Allowed Telegram IDs ({{ allowed_users|length }})</div>
+    {% if not allowed_users %}
+    <div class="empty-state">No users in allowlist.</div>
+    {% else %}
+    {% for uid in allowed_users %}
+    <div class="allowlist-item">
+      <span>{{ uid }}</span>
+      <form method="post" action="{{ url_for('admin.settings_access') }}" style="display:inline;">
+        <input type="hidden" name="action" value="remove" />
+        <input type="hidden" name="telegram_id" value="{{ uid }}" />
+        <button type="submit" class="btn-remove">Remove</button>
+      </form>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <form class="add-form" method="post" action="{{ url_for('admin.settings_access') }}">
+      <input type="hidden" name="action" value="add" />
+      <input type="text" name="telegram_id" placeholder="Telegram ID" required />
+      <button type="submit" class="btn-add">Add</button>
+    </form>
+  </div>
+
+  <div class="help-box">
+    <strong>How to find a Telegram ID</strong><br>
+    Ask the person to send <code>/start</code> to <code>@userinfobot</code> on Telegram.
+    The bot will reply with their numeric ID (e.g. <code>123456789</code>).
+    Alternatively, they can message your SAFIA bot &mdash; the rejection message includes their ID.
+  </div>
+</div>
+
+<!-- Environment -->
+{% set icons = {
+  'Bot': '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="12" height="10" rx="1.5"/><circle cx="5" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="8" r="1" fill="currentColor"/><circle cx="11" cy="8" r="1" fill="currentColor"/><path d="M5 2.5V3M11 2.5V3M2 13.5h12"/></svg>',
+  'AI & Voice': '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.5l1.5 4.5h4.5L10.5 8.5 12 13 8 10.5 4 13l1.5-4.5L2 6h4.5z"/></svg>',
+  'Search & Data': '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/></svg>',
+  'Storage': '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="8" cy="3.5" rx="5.5" ry="2"/><path d="M2.5 3.5v3c0 1.1 2.46 2 5.5 2s5.5-.9 5.5-2v-3"/><ellipse cx="8" cy="9.5" rx="5.5" ry="2"/><path d="M2.5 9.5v3c0 1.1 2.46 2 5.5 2s5.5-.9 5.5-2v-3"/></svg>',
+  'Vector & Embeddings': '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="3" cy="3" r="1.5" fill="currentColor"/><circle cx="8" cy="3" r="1.5" fill="currentColor"/><circle cx="13" cy="3" r="1.5" fill="currentColor"/><circle cx="3" cy="8" r="1.5" fill="currentColor"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><circle cx="13" cy="8" r="1.5" fill="currentColor"/><circle cx="3" cy="13" r="1.5" fill="currentColor"/><circle cx="8" cy="13" r="1.5" fill="currentColor"/><circle cx="13" cy="13" r="1.5" fill="currentColor"/></svg>',
+  'Knowledge Base': '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 13.5A2 2 0 014 11.5H14"/><path d="M4 .5H14v15H4A2 2 0 012 13.5v-11A2 2 0 014 .5z"/><path d="M5 4.5h7M5 7.5h7M5 10.5h3"/></svg>',
+  'Reminders': '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="5.5"/><path d="M8 5v3.5L10 10"/><path d="M2.5 3l1-1M13.5 3l-1-1"/></svg>',
+  'Admin': '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.5L2 4v4c0 4 6 6.5 6 6.5s6-2.5 6-6.5V4z"/><path d="M6 8l1.5 1.5L10 7"/></svg>',
+} %}
+{% for section, vars in env_groups.items() %}
+<div class="card card-accent-blue accordion-group {{ 'open' if section == 'Bot' else '' }}">
+  <button class="accordion-header" onclick="toggleAccordion(this)">
+    <span style="display:flex;align-items:center;gap:8px;">
+      <span class="accordion-icon">{{ icons.get(section, '')|safe }}</span>
+      {{ section }}
+    </span>
+    <span style="display:flex;align-items:center;gap:8px;">
+      <span class="tag tag-dim" style="margin:0;">{{ vars|length }}</span>
+      <span class="accordion-arrow">&#9654;</span>
+    </span>
+  </button>
+  <div class="accordion-body">
+    {% for var in vars %}
+    <div class="env-row">
+      <span class="env-key">
+        {{ var.key }}
+        {% if var.is_set %}<span class="set-badge">set</span>{% endif %}
+      </span>
+      <div class="env-side">
+        <span class="env-val" id="env-display-{{ var.key }}" title="{{ var.raw_value }}">{{ var.value }}</span>
+        <div class="env-edit-row" id="env-edit-{{ var.key }}">
+          <form method="post" action="{{ url_for('admin.settings_env') }}" style="display:flex;gap:8px;align-items:center;width:100%;">
+            <input type="hidden" name="key" value="{{ var.key }}" />
+            {% if var.input_type == 'select' %}
+            <select name="value">
+              {% for opt in var.options %}
+              <option value="{{ opt }}" {% if opt == var.raw_value %}selected{% endif %}>{{ opt }}</option>
+              {% endfor %}
+            </select>
+            {% else %}
+            <input type="{{ var.input_type }}"
+                   name="value"
+                   id="env-input-{{ var.key }}"
+                   data-current="{{ var.raw_value }}"
+                   placeholder="{{ var.desc }}" />
+            {% endif %}
+            <button type="submit" class="btn-save">Save</button>
+          </form>
+          <button class="btn-cancel" onclick="cancelEnvEdit('{{ var.key }}')">Cancel</button>
         </div>
-      </form>
-    </div>
-
-    <div class="settings-section">
-      <div class="section-title">Allowed Telegram IDs ({{ allowed_users|length }})</div>
-      {% if not allowed_users %}
-      <div class="empty-state">No users in allowlist.</div>
-      {% else %}
-      {% for uid in allowed_users %}
-      <div class="allowlist-item">
-        <span>{{ uid }}</span>
-        <form method="post" action="{{ url_for('admin.settings_access') }}" style="display:inline;">
-          <input type="hidden" name="action" value="remove" />
-          <input type="hidden" name="telegram_id" value="{{ uid }}" />
-          <button type="submit" class="btn-remove">Remove</button>
-        </form>
+        <button class="env-edit-btn" onclick="toggleEnvEdit('{{ var.key }}')">Edit</button>
       </div>
-      {% endfor %}
-      {% endif %}
-
-      <form class="add-form" method="post" action="{{ url_for('admin.settings_access') }}">
-        <input type="hidden" name="action" value="add" />
-        <input type="text" name="telegram_id" placeholder="Telegram ID" required />
-        <button type="submit" class="btn-add">Add</button>
-      </form>
     </div>
+    {% endfor %}
   </div>
+</div>
+{% endfor %}
 
-  <div class="card card-accent-blue d2">
-    <div class="card-top">
-      <span class="card-label">Environment</span>
-      <span class="tag tag-dim">{{ env_vars|length }} vars</span>
-    </div>
-    <div class="settings-section">
-      {% for key, val in env_vars.items() %}
-      <div class="setting-row" title="{{ val }}">
-        <span class="setting-key">{{ key }}</span>
-        <span class="setting-val">{{ val }}</span>
-      </div>
-      {% endfor %}
-    </div>
-  </div>
+<div class="help-box">
+  <strong>Restart required</strong><br>
+  Changes to environment variables only take effect after restarting the bot
+  (<code>safia restart</code> or <code>systemctl restart safia</code>).
 </div>
 {% endblock %}

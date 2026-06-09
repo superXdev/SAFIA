@@ -22,7 +22,6 @@ LLM_MODEL = os.environ.get("LLM_MODEL", "openai/gpt-oss-120b")
 
 # Legacy keys (kept for backward compat and Whisper)
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
-OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 
 # If user has GROQ_API_KEY but no explicit LLM_PROVIDER or LLM_API_KEY, stay on groq
 if not _LLM_PROVIDER_EXPLICIT and GROQ_API_KEY and not LLM_API_KEY:
@@ -110,8 +109,8 @@ EMBEDDING_LOCAL = os.environ.get("EMBEDDING_LOCAL", "true").lower() in ("true", 
 EMBEDDING_LOCAL_MODEL = os.environ.get(
     "EMBEDDING_LOCAL_MODEL", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 )
-EMBEDDING_BASE_URL = os.environ.get("EMBEDDING_BASE_URL", "https://openrouter.ai/api/v1")
-EMBEDDING_API_KEY = os.environ.get("EMBEDDING_API_KEY", "") or os.environ.get("OPENROUTER_API_KEY", "")
+EMBEDDING_BASE_URL = os.environ.get("EMBEDDING_BASE_URL", "https://api.lunosrouter.com/v1")
+EMBEDDING_API_KEY = os.environ.get("EMBEDDING_API_KEY", "") or os.environ.get("LLM_API_KEY", "")
 EMBEDDING_MODEL = os.environ.get("EMBEDDING_MODEL", "openai/text-embedding-3-small")
 EMBEDDING_VECTOR_SIZE = int(os.environ.get("EMBEDDING_VECTOR_SIZE", "384"))
 

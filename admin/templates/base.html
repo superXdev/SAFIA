@@ -36,6 +36,30 @@
       --mono: "JetBrains Mono", ui-monospace, "Cascadia Code", "Fira Code", monospace;
     }
 
+    [data-theme="dark"] {
+      --bg: #0f1117;
+      --bg-surface: #161822;
+      --bg-card: #1a1d2e;
+      --bg-hover: #202336;
+      --border: #252840;
+      --border-hover: #333758;
+      --text: #e4e5ed;
+      --text-dim: #9395ab;
+      --text-muted: #5c5f77;
+      --accent: #a78bfa;
+      --accent-dim: rgba(167, 139, 250, 0.1);
+      --green: #34d399;
+      --green-dim: rgba(52, 211, 153, 0.1);
+      --amber: #fbbf24;
+      --amber-dim: rgba(251, 191, 36, 0.1);
+      --red: #f87171;
+      --red-dim: rgba(248, 113, 113, 0.1);
+      --blue: #60a5fa;
+      --blue-dim: rgba(96, 165, 250, 0.1);
+      --pink: #f472b6;
+      --pink-dim: rgba(244, 114, 182, 0.1);
+    }
+
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
@@ -129,6 +153,32 @@
       padding-top: 16px;
       border-top: 1px solid var(--border);
     }
+    .theme-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg-hover);
+      color: var(--text-dim);
+      font-size: 12px;
+      font-family: var(--mono);
+      cursor: pointer;
+      width: 100%;
+      transition: all 0.15s ease;
+      margin-bottom: 8px;
+    }
+    .theme-toggle:hover {
+      border-color: var(--border-hover);
+      color: var(--text);
+    }
+    .theme-toggle svg { width: 14px; height: 14px; flex-shrink: 0; opacity: 0.55; }
+    .theme-toggle:hover svg { opacity: 0.85; }
+    .theme-toggle .icon-light { display: inline; }
+    .theme-toggle .icon-dark { display: none; }
+    [data-theme="dark"] .theme-toggle .icon-light { display: none; }
+    [data-theme="dark"] .theme-toggle .icon-dark { display: inline; }
     .sidebar-footer-row {
       font-size: 11px;
       font-family: var(--mono);
@@ -373,7 +423,7 @@
       cursor: pointer;
       transition: background 0.15s ease;
     }
-    .btn-primary:hover { background: rgba(167, 139, 250, 0.25); }
+    .btn-primary:hover { background: var(--accent-dim); }
     .btn-danger {
       padding: 5px 12px;
       border-radius: 5px;
@@ -385,7 +435,7 @@
       cursor: pointer;
       transition: background 0.15s ease;
     }
-    .btn-danger:hover { background: rgba(248, 113, 113, 0.25); }
+    .btn-danger:hover { background: var(--red-dim); }
     .kb-hint { font-size: 11px; color: var(--text-muted); margin-top: 10px; }
     td.kb-wrap { white-space: normal; max-width: 260px; word-break: break-word; }
 
@@ -448,6 +498,16 @@
       </nav>
 
       <div class="sidebar-footer">
+        <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark/light theme">
+          <svg class="icon-light" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="8" cy="8" r="4"/>
+            <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"/>
+          </svg>
+          <svg class="icon-dark" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M13.5 10.5A6 6 0 0 1 5.5 2.5 6 6 0 1 0 13.5 10.5z"/>
+          </svg>
+          <span class="theme-label">Light</span>
+        </button>
         <div class="sidebar-footer-row">{{ env_label }}</div>
       </div>
     </aside>
@@ -456,5 +516,29 @@
       {% block content %}{% endblock %}
     </main>
   </div>
+
+  <script>
+    (function() {
+      var saved = localStorage.getItem("safia-theme");
+      var prefers = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      if (saved === "dark" || (!saved && prefers)) {
+        document.documentElement.setAttribute("data-theme", "dark");
+      }
+      if (document.documentElement.getAttribute("data-theme") === "dark") {
+        var label = document.querySelector(".theme-label");
+        if (label) label.textContent = "Dark";
+      }
+    })();
+
+    function toggleTheme() {
+      var html = document.documentElement;
+      var isDark = html.getAttribute("data-theme") === "dark";
+      var next = isDark ? "light" : "dark";
+      html.setAttribute("data-theme", isDark ? "" : "dark");
+      localStorage.setItem("safia-theme", isDark ? "light" : "dark");
+      var label = document.querySelector(".theme-label");
+      if (label) label.textContent = isDark ? "Light" : "Dark";
+    }
+  </script>
 </body>
 </html>

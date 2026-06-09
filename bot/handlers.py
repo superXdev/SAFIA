@@ -31,9 +31,11 @@ async def _check_access(user_id: int) -> bool:
 
 
 async def _reject_unauthorized(message: Message) -> None:
+    uid = message.from_user.id if message.from_user else "unknown"
     await message.answer(
-        "Access denied — you are not authorized to use this bot.\n"
-        "Contact the bot owner to request access.",
+        "Access denied — you are not authorized to use this bot.\n\n"
+        f"Your Telegram ID: `{uid}`\n\n"
+        "Share this ID with the bot owner to request access.",
         parse_mode=ParseMode.MARKDOWN,
     )
 

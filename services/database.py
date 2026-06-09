@@ -6,6 +6,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 from sqlalchemy import delete, func, select
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import DATABASE_URL
@@ -21,7 +22,10 @@ async def init_db() -> None:
     async with engine.begin() as conn:
         if DATABASE_URL.startswith("sqlite"):
             await conn.run_sync(lambda c: c.exec_driver_sql("PRAGMA journal_mode=WAL"))
-        await conn.run_sync(Base.metadata.create_all)
+        try:
+            await conn.run_sync(Base.metadata.create_all)
+        except OperationalError:
+            pass  # race: another worker already created tables
 
 
 async def close_db() -> None:

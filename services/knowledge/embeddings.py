@@ -36,7 +36,7 @@ async def embed_texts(texts: list[str]) -> list[list[float]]:
         return embed_texts_local(texts)
 
     if not EMBEDDING_API_KEY:
-        raise RuntimeError("EMBEDDING_API_KEY (or OPENROUTER_API_KEY) is not set.")
+        raise RuntimeError("EMBEDDING_API_KEY is not set.")
     client = get_embedding_client()
     out: list[list[float]] = []
     batch_size = max(1, KB_EMBED_BATCH_SIZE)
