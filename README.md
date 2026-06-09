@@ -22,11 +22,21 @@ Built with [aiogram 3](https://docs.aiogram.dev/) and local-first architecture: 
 
 ## Quick Install
 
+**Linux / macOS:**
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/superXdev/SAFIA/main/install.sh | bash
 ```
 
 The installer handles everything: Git, uv, Python 3.12, Redis (auto-installed if missing), dependencies, and the `safia` CLI command. **No Docker required.**
+
+**Windows (PowerShell):**
+
+```powershell
+iex (irm https://raw.githubusercontent.com/superXdev/SAFIA/main/install.ps1)
+```
+
+The installer checks for Git, Python, uv (auto-installs uv if missing), and Redis. **Redis must be installed separately** — use [Memurai](https://memurai.com/), [WSL](https://learn.microsoft.com/windows/wsl/install), or Docker (`docker run -d -p 6379:6379 --name safia-redis redis:7-alpine`).
 
 After install:
 
@@ -35,7 +45,7 @@ safia setup      # Interactive wizard — creates .env
 safia start      # Start bot + admin dashboard as background daemons
 ```
 
-The daemon auto-starts on reboot (systemd on Linux, launchd on macOS).
+The daemon auto-starts on reboot (systemd on Linux, launchd on macOS, Scheduled Tasks on Windows).
 
 ## `safia` CLI
 
@@ -65,7 +75,7 @@ SAFIA runs entirely on your machine. No cloud dependencies for core features:
 | Database | SQLite (default) or PostgreSQL | **Local** |
 | Cache & rate limiting | Redis | **Local** — auto-installed by installer |
 | Admin UI | Flask + Chart.js | **Local** — `http://127.0.0.1:5454` |
-| Bot daemon | systemd / launchd | **Local** — auto-start on boot |
+| Bot daemon | systemd / launchd / Scheduled Tasks | **Local** — auto-start on boot |
 
 The embedding model (~120 MB) downloads once and runs on CPU via ONNX Runtime. Qdrant stores vectors directly to disk — no separate server or Docker container needed.
 
