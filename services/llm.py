@@ -74,6 +74,7 @@ _REMINDER_KIND_LABEL_ID: dict[str, str] = {
 
 _EXTERNAL_TOOL_STATUS_TEXT: dict[str, str] = {
     "news_search_macro": "Searching latest news...",
+    "fetch_article": "Fetching article...",
     "knowledge_search": "Searching documents...",
     "get_stock_price": "Fetching stock price...",
     "get_forex_price": "Fetching forex rate...",

@@ -23,6 +23,7 @@ dependencies = [
     "python-docx>=1.1.0",
     "pydantic-core>=2.44.0",
     "fastembed>=0.8.0",
+    "firecrawl-py>=4.28.2",
 ]
 
 [dependency-groups]

@@ -121,8 +121,7 @@ EMBEDDING_VECTOR_SIZE = int(os.environ.get("EMBEDDING_VECTOR_SIZE", "384"))
 # External API endpoints
 # -----------------------------------------------------------------------------
 GROQ_BASE_URL = os.environ.get("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
-SERPAPI_BASE_URL = os.environ.get("SERPAPI_BASE_URL", "https://serpapi.com/search")
-SERPAPI_KEY = os.environ.get("SERPAPI_KEY", "")
+FIRECRAWL_API_KEY = os.environ.get("FIRECRAWL_API_KEY", "")
 COINGECKO_BASE_URL = os.environ.get("COINGECKO_BASE_URL", "https://api.coingecko.com/api/v3")
 COINGECKO_API_KEY = os.environ.get("COINGECKO_API_KEY", "")
 GOLD_PRICE_URL = os.environ.get("GOLD_PRICE_URL", "https://harga-emas.org/")

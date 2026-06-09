@@ -4,16 +4,15 @@ import logging
 import os
 
 import httpx
-import requests
 from openai import AsyncOpenAI
-from scrapling.fetchers import Fetcher
+
+from firecrawl import FirecrawlApp
 
 from config import (
+    FIRECRAWL_API_KEY,
     LLM_CHAT_API_KEY,
     LLM_CHAT_BASE_URL,
-    LLM_MODEL as NEWS_SUMMARY_MODEL,
-    SERPAPI_BASE_URL,
-    SERPAPI_KEY,
+    LLM_MODEL,
 )
 
 MAX_PAGE_CHARS = 6000
@@ -44,87 +43,48 @@ def _get_groq_client() -> AsyncOpenAI | None:
     return _groq_client
 
 
-def _serpapi_search(query: str, num: int = 10) -> list[dict]:
-    """Run Google search via SerpAPI. Returns list of {title, link, snippet}."""
-    if not SERPAPI_KEY:
+def _firecrawl_search(query: str, limit: int = 5) -> list[dict]:
+    """Search web via Firecrawl. Returns list of {title, url, content}."""
+    if not FIRECRAWL_API_KEY:
         return []
-    params = {
-        "engine": "google",
-        "q": query,
-        "api_key": SERPAPI_KEY,
-        "num": min(num, 100),
-        "gl": "id",
-        "hl": "id",
-    }
-    resp = requests.get(SERPAPI_BASE_URL, params=params, timeout=30)
-    resp.raise_for_status()
-    return resp.json().get("organic_results", [])
-
-
-def _fetch_page_text(url: str) -> str:
-    """Fetch URL with scrapling and return main text, truncated for LLM."""
     try:
-        page = Fetcher.get(url)
-        parts = page.css("body ::text").getall()
-        if not parts:
-            parts = page.css("::text").getall()
-        text = " ".join(p.strip() for p in parts if p and p.strip())
-        text = " ".join(text.split())
-        return text[:MAX_PAGE_CHARS] if len(text) > MAX_PAGE_CHARS else text
-    except Exception:
-        return ""
-
-
-async def _pick_five_relevant(
-    client: AsyncOpenAI, question: str, results: list[dict]
-) -> list[dict]:
-    if len(results) <= 5:
-        return results[:5]
-    numbered = "\n".join(
-        f"{i}. {r.get('title', '')} | {r.get('link', '')} | {r.get('snippet', '')}"
-        for i, r in enumerate(results[:10], 1)
-    )
-    prompt = (
-        f"Question: {question}\n\nSearch results (title | link | snippet):\n{numbered}\n\n"
-        "Output only the 5 most relevant result numbers, comma-separated (e.g. 1,4,7,2,9). No explanation."
-    )
-    try:
-        resp = await client.chat.completions.create(
-            model=NEWS_SUMMARY_MODEL,
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=50,
+        app = FirecrawlApp(api_key=FIRECRAWL_API_KEY)
+        result = app.search(
+            query,
+            limit=limit,
+            scrape_options={"formats": ["markdown"], "onlyMainContent": True},
         )
-        raw = (resp.choices[0].message.content or "").strip()
-        indices = []
-        for part in raw.replace(",", " ").split():
-            try:
-                n = int(part)
-                if 1 <= n <= len(results):
-                    indices.append(n - 1)
-            except ValueError:
-                continue
-        if len(indices) >= 5:
-            indices = indices[:5]
-        else:
-            indices = list(range(min(5, len(results))))
-        return [results[i] for i in indices]
+        web = getattr(result, "web", []) or []
+        if isinstance(web, list):
+            return [
+                {
+                    "title": getattr(r, "title", "") or "",
+                    "url": getattr(r, "url", "") or "",
+                    "content": getattr(r, "markdown", "")
+                    or getattr(r, "content", "")
+                    or (r.get("markdown", "") if isinstance(r, dict) else ""),
+                }
+                for r in web
+            ]
+        return []
     except Exception:
-        return results[:5]
+        logging.exception("Firecrawl search failed")
+        return []
 
 
 async def _summarize_article(
     client: AsyncOpenAI, text: str, question: str, source_url: str
 ) -> str:
     if not text or not text.strip():
-        return f"[Tidak ada konten dari {source_url}]"
+        return f"[No content from {source_url}]"
     truncated = text[:4000] if len(text) > 4000 else text
     prompt = (
-        f"Ringkas cuplikan artikel berikut dalam 2–4 kalimat untuk konteks makro/keuangan. "
-        f"Fokus pada fakta yang relevan dengan: {question}\n\n---\n{truncated}"
+        f"Summarize this article excerpt in 2-4 sentences for financial/macro context. "
+        f"Focus on facts relevant to: {question}\n\n---\n{truncated}"
     )
     try:
         resp = await client.chat.completions.create(
-            model="openai/gpt-oss-20b",
+            model=LLM_MODEL,
             messages=[{"role": "user", "content": prompt}],
             max_tokens=300,
         )
@@ -137,58 +97,102 @@ async def _answer_from_summaries(
     client: AsyncOpenAI, question: str, summaries: list[tuple[str, str]]
 ) -> str:
     context = "\n\n".join(
-        f"Sumber: {url}\nRingkasan: {summary}" for url, summary in summaries
+        f"Source: {url}\nSummary: {summary}" for url, summary in summaries
     )
     prompt = (
-        f"Berdasarkan ringkasan berikut dari artikel terkini, jawab pertanyaan user. "
-        f"Singkat dan sebut sumber bila relevan. Jika ringkasan tidak cukup, katakan saja.\n\n"
-        f"Pertanyaan: {question}\n\n---\n{context}"
+        f"Based on the following summaries from recent articles, answer the user's question. "
+        f"Be concise and mention sources when relevant. If the summaries are insufficient, say so.\n\n"
+        f"Question: {question}\n\n---\n{context}"
     )
     try:
         resp = await client.chat.completions.create(
-            model=NEWS_SUMMARY_MODEL,
+            model=LLM_MODEL,
             messages=[{"role": "user", "content": prompt}],
             max_tokens=500,
         )
         return (resp.choices[0].message.content or "").strip()
     except Exception:
-        return "Tidak dapat menghasilkan jawaban dari ringkasan."
+        return "Unable to generate answer from summaries."
 
 
 async def search_financial_news(question: str) -> str:
     """Search web for financial/macro news, summarize top results, return answer string."""
     if not question.strip():
-        return "Pertanyaan kosong. Berikan pertanyaan tentang peristiwa aset/keuangan/makro."
-    if not SERPAPI_KEY:
-        return "Pencarian berita belum diaktifkan (SERPAPI_KEY tidak diset)."
+        return "Empty question. Ask about asset/financial/macro events."
+    if not FIRECRAWL_API_KEY:
+        return "News search is not configured (FIRECRAWL_API_KEY not set)."
     if not LLM_CHAT_API_KEY:
-        return "Ringkasan berita belum diaktifkan (API Key tidak diset)."
+        return "News summarization is not enabled (API Key not set)."
 
     try:
-        results = await asyncio.to_thread(_serpapi_search, question, 10)
+        results = await asyncio.to_thread(_firecrawl_search, question, 5)
         if not results:
-            return "Tidak ada hasil pencarian untuk pertanyaan tersebut."
+            return "No search results for that question."
 
         client = _get_groq_client()
         if not client:
-            return "API Key tidak diset. Ringkasan berita tidak tersedia."
+            return "API Key not set. News summary unavailable."
 
-        chosen = await _pick_five_relevant(client, question, results)
-        urls = [r.get("link") for r in chosen if r.get("link")]
-        if not urls:
-            return "Tidak ada tautan yang bisa diambil."
-
-        texts = await asyncio.gather(
-            *[asyncio.to_thread(_fetch_page_text, u) for u in urls]
-        )
         summaries = await asyncio.gather(
             *[
-                _summarize_article(client, text, question, url)
-                for url, text in zip(urls, texts, strict=True)
+                _summarize_article(client, r.get("content", ""), question, r.get("url", ""))
+                for r in results
             ]
         )
-        summary_tuples = list(zip(urls, summaries, strict=True))
+        summary_tuples = [
+            (r.get("url", ""), s) for r, s in zip(results, summaries, strict=True)
+        ]
         return await _answer_from_summaries(client, question, summary_tuples)
     except Exception:
         logging.exception("News search failed")
-        return "Gagal mencari atau meringkas berita. Coba lagi nanti."
+        return "Failed to search or summarize news. Try again later."
+
+
+async def fetch_and_analyze_article(url: str, question: str) -> str:
+    """Fetch a single URL and return a summary or extracted info based on the question."""
+    if not url.strip():
+        return "Empty URL."
+    if not LLM_CHAT_API_KEY:
+        return "Article analysis is not enabled (API Key not set)."
+
+    try:
+        if FIRECRAWL_API_KEY:
+            app = FirecrawlApp(api_key=FIRECRAWL_API_KEY)
+            doc = app.scrape_url(url, formats=["markdown"], onlyMainContent=True)
+            if isinstance(doc, dict):
+                data = doc.get("data", {})
+                text = data.get("markdown", "")
+            else:
+                text = getattr(doc, "markdown", "") or ""
+        else:
+            text = ""
+    except Exception:
+        text = ""
+
+    if not text:
+        return f"Unable to fetch content from {url}. The site may block access or the content is empty."
+
+    if len(text) > 8000:
+        text = text[:8000]
+
+    client = _get_groq_client()
+    if not client:
+        return text[:1000]
+
+    prompt = (
+        f"Web page content:\n\n---\n{text}\n\n---\n\n"
+        f"User question: {question}\n\n"
+        f"Answer the user's question based on the content above. "
+        f"Be concise, informative, and mention key relevant points. "
+        f"If the content is not relevant, say so."
+    )
+    try:
+        resp = await client.chat.completions.create(
+            model=LLM_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=600,
+        )
+        return (resp.choices[0].message.content or "").strip() or text[:500]
+    except Exception:
+        logging.exception("fetch_and_analyze_article failed for %s", url)
+        return f"Failed to analyze article from {url}."

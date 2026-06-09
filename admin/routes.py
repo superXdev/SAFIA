@@ -55,12 +55,9 @@ ALL_ENV_VARS: list[tuple[str, str, str, str]] = [
     ("GROQ_API_KEY", "", "API key for Groq Whisper transcription", "AI & Voice"),
     ("VISION_MODEL", "mistralai/mistral-small-3.2-24b-instruct", "Model for photo/document vision", "AI & Voice"),
     # --- Search & Data ---
-    ("SERPAPI_KEY", "", "SerpAPI key for web search", "Search & Data"),
-    ("SERPAPI_BASE_URL", "https://serpapi.com/search", "SerpAPI endpoint", "Search & Data"),
+    ("FIRECRAWL_API_KEY", "", "Firecrawl API key for web search and article fetching", "Search & Data"),
     ("COINGECKO_API_KEY", "", "CoinGecko API key (optional, for higher limits)", "Search & Data"),
     ("COINGECKO_BASE_URL", "https://api.coingecko.com/api/v3", "CoinGecko endpoint", "Search & Data"),
-    ("GOLD_PRICE_URL", "https://harga-emas.org/", "Gold price source URL", "Search & Data"),
-    ("SILVER_PRICE_URL", "https://id.bullion-rates.com/silver/IDR/spot-price.htm", "Silver price source URL", "Search & Data"),
     ("CURRENCY_RATE_URL", "https://api.frankfurter.app/latest", "Exchange rate source URL", "Search & Data"),
     # --- Storage ---
     ("DATABASE_URL", "sqlite+aiosqlite:///data/safia.db", "Database connection string", "Storage"),
@@ -303,7 +300,7 @@ def _read_dotenv() -> dict[str, str]:
 
 def _write_dotenv_key(key: str, value: str) -> None:
     """Set or update a key in .env, preserving comments, blank lines, and all other keys.
-    Uncomments commented-out keys (e.g. '# SERPAPI_KEY=') when setting a value."""
+    Uncomments commented-out keys (e.g. '# FIRECRAWL_API_KEY=') when setting a value."""
     lines_out: list[str] = []
     found = False
     key_upper = key.upper()

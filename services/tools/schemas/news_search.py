@@ -1,5 +1,4 @@
 """Tool schemas for news_search."""
-
 SCHEMAS = [
     {
         "type": "function",
@@ -17,10 +16,36 @@ SCHEMAS = [
                 "properties": {
                     "question": {
                         "type": "string",
-                        "description":                         "User's question about asset/financial/macro events (in user's language).",
+                        "description": "User's question about asset/financial/macro events (in user's language).",
                     },
                 },
                 "required": ["question"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "fetch_article",
+            "description": (
+                "Fetch and extract the content of a specific URL/article. "
+                "Use when the user provides a link and asks you to analyze, summarize, "
+                "or extract information from that page. Works with news articles, blog posts, "
+                "documentation pages, and most web content."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "description": "The full URL of the article/webpage to fetch.",
+                    },
+                    "question": {
+                        "type": "string",
+                        "description": "What the user wants to know about this page (in user's language).",
+                    },
+                },
+                "required": ["url", "question"],
             },
         },
     },

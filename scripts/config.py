@@ -178,15 +178,15 @@ def edit_groq_key(vals: dict) -> None:
         _info("Voice messages will be disabled.")
 
 
-def edit_serpapi(vals: dict) -> None:
-    _section("SerpAPI Key")
-    _info("For financial news search. Sign up at serpapi.com")
-    key = _input_password("SerpAPI Key:", vals.get("SERPAPI_KEY", ""))
+def edit_firecrawl(vals: dict) -> None:
+    _section("Firecrawl API Key")
+    _info("For web search and article fetching. Sign up at firecrawl.dev")
+    key = _input_password("Firecrawl API Key:", vals.get("FIRECRAWL_API_KEY", ""))
     if key:
-        vals["SERPAPI_KEY"] = key
+        vals["FIRECRAWL_API_KEY"] = key
     else:
-        vals.pop("SERPAPI_KEY", None)
-        _info("News search will be disabled.")
+        vals.pop("FIRECRAWL_API_KEY", None)
+        _info("Web search will be disabled.")
 
 
 def edit_database(vals: dict) -> None:
@@ -254,7 +254,7 @@ def show_config(vals: dict) -> None:
 
     display_order = [
         "TELEGRAM_BOT_TOKEN", "LLM_PROVIDER", "LLM_API_KEY", "LLM_MODEL",
-        "LLM_BASE_URL", "GROQ_API_KEY", "SERPAPI_KEY",
+        "LLM_BASE_URL", "GROQ_API_KEY", "FIRECRAWL_API_KEY",
         "DATABASE_URL", "REDIS_URL",
         "ADMIN_USERNAME", "ADMIN_PASSWORD", "FLASK_SECRET_KEY",
         "VISION_MODEL", "REMINDER_ENABLED", "REMINDER_MAX_PER_USER",
@@ -283,7 +283,7 @@ MENU_ITEMS = [
     ("AI Provider & API Key", edit_provider),
     ("AI Model", edit_model),
     ("Groq Key (voice transcription)", edit_groq_key),
-    ("SerpAPI Key (news search)", edit_serpapi),
+    ("Firecrawl Key (web search)", edit_firecrawl),
     ("Database URL", edit_database),
     ("Redis URL", edit_redis),
     ("Admin Dashboard", edit_admin),

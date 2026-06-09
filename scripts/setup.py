@@ -124,7 +124,7 @@ TR = {
     "en": {
         "section_telegram": "Telegram Bot",
         "section_ai_provider": "Choose AI Provider",
-        "section_serpapi": "SerpAPI",
+        "section_firecrawl": "Firecrawl",
         "section_database": "Database",
         "section_admin": "Admin Dashboard",
         "section_save": "Save Configuration",
@@ -133,7 +133,7 @@ TR = {
         "whisper_same": "Whisper will use the same Groq API Key.",
         "whisper_groq": "Whisper uses Groq. Skip if not needed.",
         "skip_optional": "Skip if not needed.",
-        "serpapi_desc": "For financial news search. Sign up at serpapi.com",
+        "firecrawl_desc": "For web search and article fetching. Sign up at firecrawl.dev",
         "fetching_models": "Fetching model list...",
         "sqlite_default": "Default: SQLite (zero-config)",
         "env_backup": "Old .env copied to .env.backup",
@@ -153,7 +153,7 @@ TR = {
         "model_select": "Choose model (type to search):",
         "model_manual": "Model name:",
         "whisper_key": "Groq API Key for Whisper (optional):",
-        "serpapi_key": "SerpAPI Key (optional):",
+        "firecrawl_key": "Firecrawl API Key (optional):",
         "custom_base_url": "Custom Base URL (OpenAI-compatible):",
         "database_url": "DATABASE_URL:",
         "redis_url": "REDIS_URL:",
@@ -177,14 +177,14 @@ TR = {
         "env_database": "# Database",
         "env_admin": "# Admin Dashboard",
         "env_groq_disabled": "# GROQ_API_KEY=  (not set, voice disabled)",
-        "env_serpapi_disabled": "# SERPAPI_KEY=  (not set, search disabled)",
+        "env_firecrawl_disabled": "# FIRECRAWL_API_KEY=  (not set, search disabled)",
         "uv_sync": "uv sync...",
         "fetching_models_status": "Fetching models...",
     },
     "id": {
         "section_telegram": "Telegram Bot",
         "section_ai_provider": "Pilih AI Provider",
-        "section_serpapi": "SerpAPI",
+        "section_firecrawl": "Firecrawl",
         "section_database": "Database",
         "section_admin": "Admin Dashboard",
         "section_save": "Simpan Konfigurasi",
@@ -193,7 +193,7 @@ TR = {
         "whisper_same": "Whisper akan pakai API Key Groq yang sama.",
         "whisper_groq": "Whisper pakai Groq. Kosongkan jika tidak perlu.",
         "skip_optional": "Kosongkan jika tidak perlu.",
-        "serpapi_desc": "Untuk pencarian berita keuangan. Daftar di serpapi.com",
+        "firecrawl_desc": "Untuk pencarian web dan fetching artikel. Daftar di firecrawl.dev",
         "fetching_models": "Mengambil daftar model...",
         "sqlite_default": "Default: SQLite (zero-config)",
         "env_backup": ".env lama dicopy ke .env.backup",
@@ -213,7 +213,7 @@ TR = {
         "model_select": "Pilih model (ketik untuk mencari):",
         "model_manual": "Nama model:",
         "whisper_key": "Groq API Key untuk Whisper (opsional):",
-        "serpapi_key": "SerpAPI Key (opsional):",
+        "firecrawl_key": "Firecrawl API Key (opsional):",
         "custom_base_url": "Base URL Custom (harus OpenAI-compatible):",
         "database_url": "DATABASE_URL:",
         "redis_url": "REDIS_URL:",
@@ -241,7 +241,7 @@ TR = {
         "env_database": "# Database",
         "env_admin": "# Admin Dashboard",
         "env_groq_disabled": "# GROQ_API_KEY=  (tidak diset, voice dinonaktifkan)",
-        "env_serpapi_disabled": "# SERPAPI_KEY=  (tidak diset, pencarian dinonaktifkan)",
+        "env_firecrawl_disabled": "# FIRECRAWL_API_KEY=  (tidak diset, pencarian dinonaktifkan)",
         "uv_sync": "uv sync...",
         "fetching_models_status": "Fetching models...",
     },
@@ -411,11 +411,11 @@ def get_groq_whisper_key(provider: str, api_key: str) -> str:
     return _input_password(t("whisper_key"))
 
 
-def get_serpapi_key() -> str:
-    _section(t("section_serpapi"))
-    _info(t("serpapi_desc"))
+def get_firecrawl_key() -> str:
+    _section(t("section_firecrawl"))
+    _info(t("firecrawl_desc"))
     _info(t("skip_optional"))
-    return _input_password(t("serpapi_key"))
+    return _input_password(t("firecrawl_key"))
 
 
 def get_custom_base_url() -> str:
@@ -491,7 +491,7 @@ def write_env(
     api_key: str,
     model: str,
     groq_whisper_key: str,
-    serpapi_key: str,
+    firecrawl_key: str,
     custom_base_url: str,
     database_url: str,
     redis_url: str,
@@ -524,10 +524,10 @@ def write_env(
     else:
         lines.append(t("env_groq_disabled"))
 
-    if serpapi_key:
-        lines.append(f"SERPAPI_KEY={serpapi_key}")
+    if firecrawl_key:
+        lines.append(f"FIRECRAWL_API_KEY={firecrawl_key}")
     else:
-        lines.append(t("env_serpapi_disabled"))
+        lines.append(t("env_firecrawl_disabled"))
 
     lines += [
         f"",
@@ -600,8 +600,8 @@ def main() -> None:
     # Whisper
     groq_whisper_key = get_groq_whisper_key(provider, api_key)
 
-    # SerpAPI
-    serpapi_key = get_serpapi_key()
+    # Firecrawl
+    firecrawl_key = get_firecrawl_key()
 
     # Database
     database_url = configure_database()
@@ -619,7 +619,7 @@ def main() -> None:
         api_key,
         model,
         groq_whisper_key,
-        serpapi_key,
+        firecrawl_key,
         custom_base_url,
         database_url,
         redis_url,
