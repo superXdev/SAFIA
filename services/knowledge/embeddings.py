@@ -1,4 +1,4 @@
-"""OpenAI-compatible embedding client."""
+"""Embedding client — local fastembed by default, remote API as fallback."""
 import logging
 
 from openai import AsyncOpenAI
@@ -6,8 +6,13 @@ from openai import AsyncOpenAI
 from config import (
     EMBEDDING_API_KEY,
     EMBEDDING_BASE_URL,
+    EMBEDDING_LOCAL,
     EMBEDDING_MODEL,
     KB_EMBED_BATCH_SIZE,
+)
+from services.knowledge.local_embed import (
+    embed_query_local,
+    embed_texts_local,
 )
 
 _client: AsyncOpenAI | None = None
@@ -26,6 +31,10 @@ def get_embedding_client() -> AsyncOpenAI:
 async def embed_texts(texts: list[str]) -> list[list[float]]:
     if not texts:
         return []
+
+    if EMBEDDING_LOCAL:
+        return embed_texts_local(texts)
+
     if not EMBEDDING_API_KEY:
         raise RuntimeError("EMBEDDING_API_KEY (or OPENROUTER_API_KEY) is not set.")
     client = get_embedding_client()
@@ -47,5 +56,7 @@ async def embed_texts(texts: list[str]) -> list[list[float]]:
 
 
 async def embed_query(text: str) -> list[float]:
+    if EMBEDDING_LOCAL:
+        return embed_query_local(text)
     vecs = await embed_texts([text])
     return vecs[0]

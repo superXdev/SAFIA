@@ -18,7 +18,9 @@ from qdrant_client.models import (
 from config import (
     EMBEDDING_VECTOR_SIZE,
     KB_COLLECTION_NAME,
+    KB_EMBED_BATCH_SIZE,
     QDRANT_API_KEY,
+    QDRANT_PATH,
     QDRANT_URL,
 )
 
@@ -28,7 +30,10 @@ _client: AsyncQdrantClient | None = None
 def get_qdrant() -> AsyncQdrantClient:
     global _client
     if _client is None:
-        kwargs: dict = {"url": QDRANT_URL.strip()}
+        if QDRANT_URL.strip():
+            kwargs: dict = {"url": QDRANT_URL.strip(), "check_compatibility": False}
+        else:
+            kwargs: dict = {"path": QDRANT_PATH}
         if QDRANT_API_KEY:
             kwargs["api_key"] = QDRANT_API_KEY
         _client = AsyncQdrantClient(**kwargs)

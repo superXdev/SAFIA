@@ -1,9 +1,10 @@
 """Flask admin dashboard app factory."""
+import logging
 import os
 
 from flask import Flask
 
-from config import KB_MAX_UPLOAD_MB
+from config import EMBEDDING_LOCAL, KB_MAX_UPLOAD_MB
 
 
 def create_app() -> Flask:
@@ -15,5 +16,11 @@ def create_app() -> Flask:
 
     app.register_blueprint(bp)
     init_admin_db()
+
+    if EMBEDDING_LOCAL:
+        logging.info("Warming up local embedding model...")
+        from services.knowledge.local_embed import warmup_local_embedding
+
+        warmup_local_embedding()
 
     return app

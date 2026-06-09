@@ -96,19 +96,24 @@ RATE_LIMIT_KEY_PREFIX = "safia:rate:"
 DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite+aiosqlite:///data/safia.db")
 
 # -----------------------------------------------------------------------------
-# Qdrant (knowledge base vectors)
+# Qdrant (knowledge base vectors) — local file storage by default
 # -----------------------------------------------------------------------------
-QDRANT_URL = os.environ.get("QDRANT_URL", "http://127.0.0.1:6333")
+QDRANT_PATH = os.environ.get("QDRANT_PATH", "data/qdrant")
+QDRANT_URL = os.environ.get("QDRANT_URL", "")
 QDRANT_API_KEY = os.environ.get("QDRANT_API_KEY", "") or None
 KB_COLLECTION_NAME = os.environ.get("KB_COLLECTION_NAME", "safia_kb")
 
 # -----------------------------------------------------------------------------
-# Embeddings (OpenAI-compatible API; not Groq chat)
+# Embeddings — local (fastembed) by default; set EMBEDDING_LOCAL=false for remote
 # -----------------------------------------------------------------------------
+EMBEDDING_LOCAL = os.environ.get("EMBEDDING_LOCAL", "true").lower() in ("true", "1", "yes")
+EMBEDDING_LOCAL_MODEL = os.environ.get(
+    "EMBEDDING_LOCAL_MODEL", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+)
 EMBEDDING_BASE_URL = os.environ.get("EMBEDDING_BASE_URL", "https://openrouter.ai/api/v1")
 EMBEDDING_API_KEY = os.environ.get("EMBEDDING_API_KEY", "") or os.environ.get("OPENROUTER_API_KEY", "")
 EMBEDDING_MODEL = os.environ.get("EMBEDDING_MODEL", "openai/text-embedding-3-small")
-EMBEDDING_VECTOR_SIZE = int(os.environ.get("EMBEDDING_VECTOR_SIZE", "1536"))
+EMBEDDING_VECTOR_SIZE = int(os.environ.get("EMBEDDING_VECTOR_SIZE", "384"))
 
 # -----------------------------------------------------------------------------
 # Knowledge base ingest

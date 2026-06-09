@@ -16,6 +16,7 @@ test.py
 
 # Knowledge base file copies (optional local audit)
 data/kb_uploads/
+data/qdrant/
 
 # SQLite database files
 data/*.db
