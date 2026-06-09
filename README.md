@@ -16,7 +16,7 @@ Runs entirely on your machine: SQLite for data, Qdrant on-disk for document sear
 - **Habit-based suggestions** — reminder suggestions inferred from user behavior patterns
 - **Document scanning** — send photos of receipts to auto-extract and record amounts
 - **Voice messages** — speak instead of type, powered by Whisper (Groq)
-- **Daily rate limiting** — 25 messages per user per day (configurable)
+- **Daily rate limiting** — 1000 messages per user per day (configurable)
 - **Admin dashboard** — web UI with metrics, user registry, and knowledge base management
 - **Knowledge base (RAG)** — upload PDF/TXT/DOCX for document-grounded responses
 

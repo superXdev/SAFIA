@@ -25,7 +25,7 @@ async def main() -> None:
     await bot.set_my_commands(
         [
             BotCommand(command="start", description="Mulai / reset percakapan"),
-            BotCommand(command="bantuan", description="Bantuan & cara pakai"),
+            BotCommand(command="help", description="Bantuan & cara pakai"),
         ]
     )
 

@@ -238,7 +238,7 @@ def edit_advanced(vals: dict) -> None:
             "Check interval (seconds):", vals.get("REMINDER_TICK_SECONDS", "30")
         )
 
-    rate = _input_text("Daily message limit:", vals.get("DAILY_MESSAGE_LIMIT", "25"))
+    rate = _input_text("Daily message limit:", vals.get("DAILY_MESSAGE_LIMIT", "1000"))
     if rate:
         vals["DAILY_MESSAGE_LIMIT"] = rate
 

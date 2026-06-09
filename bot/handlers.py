@@ -88,24 +88,24 @@ async def handle_start(message: Message) -> None:
         "- Help with *debt*, savings, financial news, education, and *reminders*\n\n"
         "*How to use?* Send text, voice, or a clear photo of a receipt/payslip.\n\n"
         "/start = restart conversation\n"
-        "/bantuan = quick info & limits\n\n"
+        "/help = quick info & limits\n\n"
         "Got questions? Just send a message 🙂"
     )
 
     await message.answer(text, parse_mode=ParseMode.MARKDOWN)
 
 
-async def handle_bantuan(message: Message) -> None:
+async def handle_help(message: Message) -> None:
     text = (
         "*SAFIA Help*\n\n"
         "*Commands*\n"
         "/start — restart conversation\n"
-        "/bantuan — this message\n\n"
+        "/help — this message\n\n"
         "*Send*\n"
         "- *Text* — ask about money, investments, prices, exchange rates, etc.\n"
         "- *Voice* — transcribed to text, then answered like a regular chat\n"
         "- *Photo* — clear receipt or payslip (I'll read the contents)\n\n"
-        "*Limit:* max *25 messages per day* per account (resets daily).\n\n"
+        "*Limit:* max *1000 messages per day* per account (resets daily).\n\n"
         "*Tip:* write amounts and dates clearly for accurate records."
     )
     await message.answer(text, parse_mode=ParseMode.MARKDOWN)
@@ -119,7 +119,7 @@ async def handle_message(message: Message) -> None:
     allowed, remaining = await check_and_increment_rate_limit(message.from_user.id)
     if not allowed:
         await message.answer(
-            "You've reached the daily limit of 25 messages.\n"
+            "You've reached the daily limit of 1000 messages.\n"
             "Please try again tomorrow, or reset the conversation if needed.",
             parse_mode=ParseMode.MARKDOWN,
         )
@@ -146,7 +146,7 @@ async def handle_voice(message: Message) -> None:
     allowed, remaining = await check_and_increment_rate_limit(message.from_user.id)
     if not allowed:
         await message.answer(
-            "You've reached the daily limit of 25 messages.\n"
+            "You've reached the daily limit of 1000 messages.\n"
             "Please try again tomorrow, or reset the conversation if needed.",
             parse_mode=ParseMode.MARKDOWN,
         )
@@ -201,7 +201,7 @@ async def handle_photo(message: Message) -> None:
     allowed, remaining = await check_and_increment_rate_limit(message.from_user.id)
     if not allowed:
         await message.answer(
-            "You've reached the daily limit of 25 messages.\n"
+            "You've reached the daily limit of 1000 messages.\n"
             "Please try again tomorrow, or reset the conversation if needed.",
             parse_mode=ParseMode.MARKDOWN,
         )
@@ -253,7 +253,7 @@ async def handle_photo(message: Message) -> None:
 
 def register_handlers(dp: Dispatcher) -> None:
     dp.message.register(handle_start, F.text == "/start")
-    dp.message.register(handle_bantuan, Command("bantuan"))
+    dp.message.register(handle_help, Command("help"))
     dp.message.register(handle_voice, F.voice)
     dp.message.register(handle_photo, F.photo)
     dp.message.register(handle_message, F.text)
