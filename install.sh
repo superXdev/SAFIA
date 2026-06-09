@@ -373,15 +373,123 @@ check_python() {
 
 check_redis() {
     log_info "Checking Redis..."
+
     if command -v redis-cli >/dev/null 2>&1 && redis-cli ping >/dev/null 2>&1; then
         log_success "Redis is running"
         return 0
     fi
 
-    log_warn "Redis is not running. SAFIA requires Redis for chat history and rate limiting."
-    log_info "Start Redis before running the bot:"
-    log_info "  docker run -d -p 6379:6379 --name safia-redis redis:7-alpine"
-    log_info "Or install Redis via your package manager."
+    if command -v redis-server >/dev/null 2>&1; then
+        log_info "Redis is installed but not running — starting it..."
+        if command -v systemctl >/dev/null 2>&1; then
+            sudo systemctl start redis redis-server 2>/dev/null || \
+                sudo systemctl start valkey 2>/dev/null || true
+        elif command -v brew >/dev/null 2>&1; then
+            brew services start redis 2>/dev/null || \
+                brew services start valkey 2>/dev/null || true
+        else
+            redis-server --daemonize yes 2>/dev/null || true
+        fi
+        sleep 1
+        if redis-cli ping >/dev/null 2>&1; then
+            log_success "Redis started"
+            return 0
+        fi
+    fi
+
+    log_info "Redis not found — installing automatically..."
+    case "$OS" in
+        linux)
+            local sudo_cmd=""
+            command -v sudo >/dev/null 2>&1 && sudo_cmd="sudo"
+            case "$DISTRO" in
+                ubuntu|debian|linuxmint|pop|elementary|zorin)
+                    $sudo_cmd apt-get update -qq >/dev/null 2>&1 || true
+                    $sudo_cmd apt-get install -y -qq redis-server >/dev/null 2>&1 || \
+                        $sudo_cmd apt-get install -y -qq valkey >/dev/null 2>&1 || true
+                    ;;
+                fedora|centos|rhel|rocky|almalinux|ol)
+                    $sudo_cmd dnf install -y redis >/dev/null 2>&1 || \
+                        $sudo_cmd yum install -y redis >/dev/null 2>&1 || \
+                        $sudo_cmd dnf install -y valkey >/dev/null 2>&1 || true
+                    ;;
+                arch|manjaro|endeavouros|garuda|artix)
+                    $sudo_cmd pacman -S --noconfirm redis >/dev/null 2>&1 || \
+                        $sudo_cmd pacman -S --noconfirm valkey >/dev/null 2>&1 || true
+                    ;;
+                opensuse-tumbleweed|opensuse-leap|suse|opensuse)
+                    $sudo_cmd zypper install -y redis >/dev/null 2>&1 || \
+                        $sudo_cmd zypper install -y valkey >/dev/null 2>&1 || true
+                    ;;
+                alpine)
+                    $sudo_cmd apk add redis >/dev/null 2>&1 || \
+                        $sudo_cmd apk add valkey >/dev/null 2>&1 || true
+                    ;;
+                gentoo)
+                    $sudo_cmd emerge -q redis >/dev/null 2>&1 || true
+                    ;;
+                void)
+                    $sudo_cmd xbps-install -y redis >/dev/null 2>&1 || true
+                    ;;
+                *)
+                    log_info "Unknown distro — trying common package managers..."
+                    if command -v apt-get >/dev/null 2>&1; then
+                        $sudo_cmd apt-get update -qq >/dev/null 2>&1 || true
+                        $sudo_cmd apt-get install -y -qq redis-server valkey >/dev/null 2>&1 || true
+                    elif command -v dnf >/dev/null 2>&1; then
+                        $sudo_cmd dnf install -y redis valkey >/dev/null 2>&1 || true
+                    elif command -v yum >/dev/null 2>&1; then
+                        $sudo_cmd yum install -y redis >/dev/null 2>&1 || true
+                    elif command -v pacman >/dev/null 2>&1; then
+                        $sudo_cmd pacman -S --noconfirm redis valkey >/dev/null 2>&1 || true
+                    elif command -v zypper >/dev/null 2>&1; then
+                        $sudo_cmd zypper install -y redis valkey >/dev/null 2>&1 || true
+                    elif command -v apk >/dev/null 2>&1; then
+                        $sudo_cmd apk add redis valkey >/dev/null 2>&1 || true
+                    elif command -v emerge >/dev/null 2>&1; then
+                        $sudo_cmd emerge -q redis >/dev/null 2>&1 || true
+                    elif command -v xbps-install >/dev/null 2>&1; then
+                        $sudo_cmd xbps-install -y redis >/dev/null 2>&1 || true
+                    else
+                        log_warn "No supported package manager found."
+                        return 0
+                    fi
+                    ;;
+            esac
+            ;;
+        macos)
+            if command -v brew >/dev/null 2>&1; then
+                brew install redis >/dev/null 2>&1 || \
+                    brew install valkey >/dev/null 2>&1 || true
+            else
+                log_warn "Homebrew not found — cannot auto-install Redis."
+                return 0
+            fi
+            ;;
+    esac
+
+    if command -v redis-server >/dev/null 2>&1; then
+        log_info "Starting Redis..."
+        if command -v systemctl >/dev/null 2>&1; then
+            sudo systemctl enable --now redis redis-server 2>/dev/null || \
+                sudo systemctl enable --now valkey 2>/dev/null || true
+        elif command -v brew >/dev/null 2>&1; then
+            brew services start redis 2>/dev/null || \
+                brew services start valkey 2>/dev/null || true
+        else
+            redis-server --daemonize yes 2>/dev/null || true
+        fi
+        sleep 1
+        if redis-cli ping >/dev/null 2>&1; then
+            log_success "Redis installed and running"
+        else
+            log_warn "Redis installed but failed to start. Try: redis-server --daemonize yes"
+        fi
+    else
+        log_warn "Could not install Redis automatically."
+        log_info "Install manually or use Docker:"
+        log_info "  docker run -d -p 6379:6379 --name safia-redis redis:7-alpine"
+    fi
 }
 
 # ── Clone / update ──────────────────────────────────────────────────────────
@@ -441,125 +549,6 @@ install_deps() {
     log_success "Dependencies installed"
 }
 
-# ── Daemon setup ────────────────────────────────────────────────────────────
-
-install_systemd_daemon() {
-    local service_dir="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
-    mkdir -p "$service_dir"
-
-    local service_file="$service_dir/safia.service"
-    local venv_python="$INSTALL_DIR/.venv/bin/python"
-    local log_dir="$SAFIA_HOME/logs"
-    mkdir -p "$log_dir"
-
-    log_info "Creating systemd user service..."
-
-    cat > "$service_file" << SYSTEMD_EOF
-[Unit]
-Description=SAFIA Telegram Bot
-After=network-online.target redis.service
-Wants=network-online.target
-
-[Service]
-Type=simple
-WorkingDirectory=$INSTALL_DIR
-ExecStart=$venv_python main.py
-Restart=always
-RestartSec=15
-Environment=PYTHONUNBUFFERED=1
-StandardOutput=append:$log_dir/bot.log
-StandardError=append:$log_dir/bot.log
-
-[Install]
-WantedBy=default.target
-SYSTEMD_EOF
-
-    systemctl --user daemon-reload
-    systemctl --user enable safia.service
-    systemctl --user start safia.service
-
-    log_success "systemd service installed and started (auto-start on boot enabled)"
-}
-
-install_launchd_daemon() {
-    local agents_dir="$HOME/Library/LaunchAgents"
-    mkdir -p "$agents_dir"
-
-    local plist_file="$agents_dir/com.safia.bot.plist"
-    local venv_python="$INSTALL_DIR/.venv/bin/python"
-    local log_dir="$SAFIA_HOME/logs"
-    mkdir -p "$log_dir"
-
-    log_info "Creating launchd agent..."
-
-    cat > "$plist_file" << LAUNCHD_EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
-  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key>
-    <string>com.safia.bot</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>$venv_python</string>
-        <string>main.py</string>
-    </array>
-    <key>WorkingDirectory</key>
-    <string>$INSTALL_DIR</string>
-    <key>RunAtLoad</key>
-    <true/>
-    <key>KeepAlive</key>
-    <true/>
-    <key>StandardOutPath</key>
-    <string>$log_dir/bot.log</string>
-    <key>StandardErrorPath</key>
-    <string>$log_dir/bot.log</string>
-    <key>EnvironmentVariables</key>
-    <dict>
-        <key>PYTHONUNBUFFERED</key>
-        <string>1</string>
-    </dict>
-</dict>
-</plist>
-LAUNCHD_EOF
-
-    launchctl bootout "gui/$UID/com.safia.bot" 2>/dev/null || true
-    launchctl bootstrap "gui/$UID" "$plist_file"
-    launchctl kickstart "gui/$UID/com.safia.bot"
-
-    log_success "launchd agent installed and started (auto-start on login enabled)"
-}
-
-install_daemon() {
-    if [ ! -f "$INSTALL_DIR/.env" ]; then
-        log_warn "No .env found — skipping daemon setup. Run 'safia setup' first."
-        return 0
-    fi
-
-    echo ""
-    log_info "Setting up background daemon (auto-starts on reboot)..."
-
-    case "$OS" in
-        linux)
-            if command -v systemctl >/dev/null 2>&1 && systemctl --user >/dev/null 2>&1; then
-                install_systemd_daemon
-            else
-                log_warn "systemd user services not available. Cannot set up daemon."
-                log_info "Run the bot manually: cd $INSTALL_DIR && $INSTALL_DIR/.venv/bin/python main.py"
-            fi
-            ;;
-        macos)
-            if command -v launchctl >/dev/null 2>&1; then
-                install_launchd_daemon
-            else
-                log_warn "launchd not available. Cannot set up daemon."
-                log_info "Run the bot manually: cd $INSTALL_DIR && $INSTALL_DIR/.venv/bin/python main.py"
-            fi
-            ;;
-    esac
-}
-
 # ── Daemon control helpers (for CLI wrapper) ────────────────────────────────
 
 generate_daemon_control_functions() {
@@ -568,16 +557,21 @@ generate_daemon_control_functions() {
             cat << 'DAEMON_LINUX'
 safia_start() {
     local service_dir="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
-    local service_file="$service_dir/safia.service"
+    local svc_bot="$service_dir/safia.service"
+    local svc_admin="$service_dir/safia-admin.service"
 
-    if [ ! -f "$service_file" ]; then
-        if [ ! -f "$INSTALL_DIR/.env" ]; then
-            echo "✗ No .env found. Run 'safia setup' first to configure."
-            return 1
-        fi
+    if [ ! -f "$INSTALL_DIR/.env" ]; then
+        echo "✗ No .env found. Run 'safia setup' first to configure."
+        return 1
+    fi
+
+    if [ ! -f "$svc_bot" ] || [ ! -f "$svc_admin" ]; then
         mkdir -p "$service_dir"
         mkdir -p "$SAFIA_HOME/logs"
-        cat > "$service_file" << 'SVC'
+    fi
+
+    if [ ! -f "$svc_bot" ]; then
+        cat > "$svc_bot" << 'SVC'
 [Unit]
 Description=SAFIA Telegram Bot
 After=network-online.target
@@ -596,40 +590,71 @@ StandardError=append:__SAFIA_HOME__/logs/bot.log
 [Install]
 WantedBy=default.target
 SVC
-        sed -e "s|__INSTALL_DIR__|$INSTALL_DIR|g" -e "s|__SAFIA_HOME__|$SAFIA_HOME|g" "$service_file" > "${service_file}.tmp" && mv "${service_file}.tmp" "$service_file"
+        sed -e "s|__INSTALL_DIR__|$INSTALL_DIR|g" -e "s|__SAFIA_HOME__|$SAFIA_HOME|g" "$svc_bot" > "${svc_bot}.tmp" && mv "${svc_bot}.tmp" "$svc_bot"
+    fi
+
+    if [ ! -f "$svc_admin" ]; then
+        cat > "$svc_admin" << 'SVC'
+[Unit]
+Description=SAFIA Admin Dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=__INSTALL_DIR__
+ExecStart=__INSTALL_DIR__/.venv/bin/python admin_dashboard.py
+Restart=always
+RestartSec=15
+Environment=PYTHONUNBUFFERED=1
+StandardOutput=append:__SAFIA_HOME__/logs/admin.log
+StandardError=append:__SAFIA_HOME__/logs/admin.log
+
+[Install]
+WantedBy=default.target
+SVC
+        sed -e "s|__INSTALL_DIR__|$INSTALL_DIR|g" -e "s|__SAFIA_HOME__|$SAFIA_HOME|g" "$svc_admin" > "${svc_admin}.tmp" && mv "${svc_admin}.tmp" "$svc_admin"
         systemctl --user daemon-reload
-        systemctl --user enable safia.service
+        systemctl --user enable safia.service safia-admin.service
         echo "→ Daemon configured (auto-start on boot enabled)."
     fi
 
-    systemctl --user start safia.service 2>/dev/null && \
-        echo "✓ SAFIA bot started." || \
+    systemctl --user start safia.service safia-admin.service 2>/dev/null && \
+        echo "✓ SAFIA started (bot + admin dashboard on http://127.0.0.1:5454)." || \
         echo "✗ Failed to start. Check: systemctl --user status safia"
 }
 
 safia_stop() {
-    systemctl --user stop safia.service 2>/dev/null && \
-        echo "✓ SAFIA bot stopped." || \
+    systemctl --user stop safia.service safia-admin.service 2>/dev/null && \
+        echo "✓ SAFIA stopped." || \
         echo "✗ Failed to stop."
 }
 
 safia_restart() {
-    systemctl --user restart safia.service 2>/dev/null && \
-        echo "✓ SAFIA bot restarted." || \
+    systemctl --user restart safia.service safia-admin.service 2>/dev/null && \
+        echo "✓ SAFIA restarted." || \
         echo "✗ Failed to restart."
 }
 
 safia_status() {
-    systemctl --user status safia.service 2>/dev/null || \
+    systemctl --user status safia.service safia-admin.service 2>/dev/null || \
         echo "Service not found. Run 'safia start' first."
 }
 
 safia_logs() {
     local n="${1:-30}"
-    if [ -f "$SAFIA_HOME/logs/bot.log" ]; then
-        tail -n "$n" "$SAFIA_HOME/logs/bot.log"
-    else
-        journalctl --user -u safia.service -n "$n" --no-pager 2>/dev/null || \
+    local log_bot="$SAFIA_HOME/logs/bot.log"
+    local log_admin="$SAFIA_HOME/logs/admin.log"
+    if [ -f "$log_bot" ]; then
+        echo "═══ Bot logs ($log_bot) ═══"
+        tail -n "$n" "$log_bot"
+        echo ""
+    fi
+    if [ -f "$log_admin" ]; then
+        echo "═══ Admin logs ($log_admin) ═══"
+        tail -n "$n" "$log_admin"
+    elif [ ! -f "$log_bot" ]; then
+        journalctl --user -u safia.service -u safia-admin.service -n "$n" --no-pager 2>/dev/null || \
             echo "No logs found."
     fi
 }
@@ -638,16 +663,22 @@ DAEMON_LINUX
         macos)
             cat << 'DAEMON_MACOS'
 safia_start() {
-    local plist_file="$HOME/Library/LaunchAgents/com.safia.bot.plist"
+    local agents_dir="$HOME/Library/LaunchAgents"
+    local plist_bot="$agents_dir/com.safia.bot.plist"
+    local plist_admin="$agents_dir/com.safia.admin.plist"
 
-    if [ ! -f "$plist_file" ]; then
-        if [ ! -f "$INSTALL_DIR/.env" ]; then
-            echo "✗ No .env found. Run 'safia setup' first to configure."
-            return 1
-        fi
-        mkdir -p "$HOME/Library/LaunchAgents"
+    if [ ! -f "$INSTALL_DIR/.env" ]; then
+        echo "✗ No .env found. Run 'safia setup' first to configure."
+        return 1
+    fi
+
+    if [ ! -f "$plist_bot" ] || [ ! -f "$plist_admin" ]; then
+        mkdir -p "$agents_dir"
         mkdir -p "$SAFIA_HOME/logs"
-        cat > "$plist_file" << 'PLIST'
+    fi
+
+    if [ ! -f "$plist_bot" ]; then
+        cat > "$plist_bot" << 'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
   "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -678,24 +709,71 @@ safia_start() {
 </dict>
 </plist>
 PLIST
-        sed -e "s|__INSTALL_DIR__|$INSTALL_DIR|g" -e "s|__SAFIA_HOME__|$SAFIA_HOME|g" "$plist_file" > "${plist_file}.tmp" && mv "${plist_file}.tmp" "$plist_file"
+        sed -e "s|__INSTALL_DIR__|$INSTALL_DIR|g" -e "s|__SAFIA_HOME__|$SAFIA_HOME|g" "$plist_bot" > "${plist_bot}.tmp" && mv "${plist_bot}.tmp" "$plist_bot"
+    fi
+
+    if [ ! -f "$plist_admin" ]; then
+        cat > "$plist_admin" << 'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.safia.admin</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>__INSTALL_DIR__/.venv/bin/python</string>
+        <string>admin_dashboard.py</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>__INSTALL_DIR__</string>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>__SAFIA_HOME__/logs/admin.log</string>
+    <key>StandardErrorPath</key>
+    <string>__SAFIA_HOME__/logs/admin.log</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PYTHONUNBUFFERED</key>
+        <string>1</string>
+    </dict>
+</dict>
+</plist>
+PLIST
+        sed -e "s|__INSTALL_DIR__|$INSTALL_DIR|g" -e "s|__SAFIA_HOME__|$SAFIA_HOME|g" "$plist_admin" > "${plist_admin}.tmp" && mv "${plist_admin}.tmp" "$plist_admin"
         echo "→ Daemon configured (auto-start on login enabled)."
     fi
 
-    if launchctl list com.safia.bot &>/dev/null; then
-        echo "SAFIA is already running."
-        return 0
+    local started=true
+    if ! launchctl list com.safia.bot &>/dev/null; then
+        launchctl bootstrap "gui/$UID" "$plist_bot" 2>/dev/null || started=false
     fi
-    launchctl bootstrap "gui/$UID" "$plist_file" 2>/dev/null
-    launchctl kickstart "gui/$UID/com.safia.bot" 2>/dev/null && \
-        echo "✓ SAFIA bot started." || \
+    if ! launchctl list com.safia.admin &>/dev/null; then
+        launchctl bootstrap "gui/$UID" "$plist_admin" 2>/dev/null || started=false
+    fi
+    launchctl kickstart "gui/$UID/com.safia.bot" 2>/dev/null
+    launchctl kickstart "gui/$UID/com.safia.admin" 2>/dev/null
+
+    if [ "$started" = true ]; then
+        echo "✓ SAFIA started (bot + admin dashboard on http://127.0.0.1:5454)."
+    else
         echo "✗ Failed to start. Check logs: safia logs"
+    fi
 }
 
 safia_stop() {
-    launchctl bootout "gui/$UID/com.safia.bot" 2>/dev/null && \
-        echo "✓ SAFIA bot stopped." || \
+    local ok=true
+    launchctl bootout "gui/$UID/com.safia.bot" 2>/dev/null || ok=false
+    launchctl bootout "gui/$UID/com.safia.admin" 2>/dev/null || ok=false
+    if [ "$ok" = true ]; then
+        echo "✓ SAFIA stopped."
+    else
         echo "SAFIA is not running."
+    fi
 }
 
 safia_restart() {
@@ -705,8 +783,15 @@ safia_restart() {
 }
 
 safia_status() {
-    if launchctl list com.safia.bot &>/dev/null; then
-        echo "✓ SAFIA is running (PID $(launchctl list com.safia.bot 2>/dev/null | awk 'NR>1{print $1}'))"
+    local bot_running=false admin_running=false
+    launchctl list com.safia.bot &>/dev/null && bot_running=true
+    launchctl list com.safia.admin &>/dev/null && admin_running=true
+    if [ "$bot_running" = true ] && [ "$admin_running" = true ]; then
+        echo "✓ SAFIA is running (bot + admin dashboard on http://127.0.0.1:5454)"
+    elif [ "$bot_running" = true ]; then
+        echo "⚠ Bot is running but admin dashboard is not."
+    elif [ "$admin_running" = true ]; then
+        echo "⚠ Admin dashboard is running but bot is not."
     else
         echo "✗ SAFIA is not running."
     fi
@@ -714,9 +799,17 @@ safia_status() {
 
 safia_logs() {
     local n="${1:-30}"
-    if [ -f "$SAFIA_HOME/logs/bot.log" ]; then
-        tail -n "$n" "$SAFIA_HOME/logs/bot.log"
-    else
+    local log_bot="$SAFIA_HOME/logs/bot.log"
+    local log_admin="$SAFIA_HOME/logs/admin.log"
+    if [ -f "$log_bot" ]; then
+        echo "═══ Bot logs ($log_bot) ═══"
+        tail -n "$n" "$log_bot"
+        echo ""
+    fi
+    if [ -f "$log_admin" ]; then
+        echo "═══ Admin logs ($log_admin) ═══"
+        tail -n "$n" "$log_admin"
+    elif [ ! -f "$log_bot" ]; then
         echo "No logs found."
     fi
 }
@@ -805,11 +898,11 @@ case "${1:-}" in
         fi
         safia_stop 2>/dev/null || true
         if [ "$(uname -s)" = "Linux" ] && command -v systemctl >/dev/null 2>&1; then
-            systemctl --user disable safia.service 2>/dev/null || true
-            rm -f "${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/safia.service"
+            systemctl --user disable safia.service safia-admin.service 2>/dev/null || true
+            rm -f "${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/safia.service" "${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/safia-admin.service"
             systemctl --user daemon-reload 2>/dev/null || true
         elif [ "$(uname -s)" = "Darwin" ]; then
-            rm -f "$HOME/Library/LaunchAgents/com.safia.bot.plist"
+            rm -f "$HOME/Library/LaunchAgents/com.safia.bot.plist" "$HOME/Library/LaunchAgents/com.safia.admin.plist"
         fi
         rm -f "$HOME/.local/bin/safia"
         rm -rf "$SAFIA_HOME"

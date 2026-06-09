@@ -2,7 +2,7 @@
 """CLI configuration manager for SAFIA bot.
 
 Usage:
-    uv run python scripts/config.py
+    safia config
 """
 
 import os
@@ -304,7 +304,7 @@ def main() -> None:
     console.print()
 
     if not ENV_PATH.exists():
-        _warn("No .env file found. Run setup first: uv run python scripts/setup.py")
+        _warn("No .env file found. Run setup first: safia setup")
         sys.exit(1)
 
     vals = load_env()

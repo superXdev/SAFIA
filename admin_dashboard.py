@@ -1,7 +1,7 @@
 """Run the admin dashboard.
 
 Usage:
-    uv run python admin_dashboard.py
+    python admin_dashboard.py
 """
 from dotenv import load_dotenv
 

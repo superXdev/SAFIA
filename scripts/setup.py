@@ -164,12 +164,6 @@ TR = {
         "cannot_be_empty": "Cannot be empty. Try again.",
         "input_cannot_be_empty": "Input cannot be empty. Try again.",
         "setup_complete": "Setup Complete!",
-        "run_bot": "uv run python main.py",
-        "run_dev": "uv run python run_dev.py",
-        "run_admin": "uv run python admin_dashboard.py",
-        "bot_label": "Bot:",
-        "dev_label": "Dev:",
-        "admin_label": "Admin:",
         "python_required": "Python 3.12+ required. Current:",
         "uv_not_found": "uv not found. Install:",
         "cancelled": "Cancelled.",
@@ -230,11 +224,9 @@ TR = {
         "cannot_be_empty": "Tidak boleh kosong. Coba lagi.",
         "input_cannot_be_empty": "Masukkan tidak boleh kosong. Coba lagi.",
         "setup_complete": "Setup Selesai!",
-        "run_bot": "uv run python main.py",
-        "run_dev": "uv run python run_dev.py",
-        "run_admin": "uv run python admin_dashboard.py",
-        "bot_label": "Bot:",
-        "dev_label": "Dev:",
+        "run_bot": "safia start",
+        "run_admin": "python admin_dashboard.py",
+        "bot_label": "Run bot:",
         "admin_label": "Admin:",
         "python_required": "Python 3.12+ diperlukan. Versi saat ini:",
         "uv_not_found": "uv tidak ditemukan. Install:",
@@ -640,16 +632,7 @@ def main() -> None:
     console.print(
         Panel(
             Align.center(
-                Text(t("setup_complete"), style="bold green")
-                + Text("\n\n")
-                + Text(t("bot_label"), style="dim")
-                + Text(f"  {t('run_bot')}", style="bright_cyan")
-                + Text("\n")
-                + Text(t("dev_label"), style="dim")
-                + Text(f"  {t('run_dev')}", style="bright_cyan")
-                + Text("\n")
-                + Text(t("admin_label"), style="dim")
-                + Text(f"  {t('run_admin')}", style="bright_cyan"),
+                Text(t("setup_complete"), style="bold green"),
                 vertical="middle",
             ),
             border_style="green",

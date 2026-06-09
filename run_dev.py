@@ -1,7 +1,7 @@
 """Run the bot with auto-reload on file changes.
 
   uv sync --extra dev
-  uv run python run_dev.py
+  python run_dev.py
 """
 import os
 import sys
