@@ -6,21 +6,21 @@ SCHEMAS = [
         "function": {
             "name": "get_stock_price",
             "description": (
-                "Cek harga saham Indonesia (IDX) dari TradingView. "
-                "Bisa filter dengan kata kunci (misal: bank, BBCA, TLKM). "
-                "Mengembalikan daftar saham dengan price, change %, volume, market cap, sector, dll. "
-                "Gunakan ketika user tanya harga saham Indonesia, saham IDX, atau cek saham tertentu."
+                "Check Indonesian stock prices (IDX) from TradingView. "
+                "Can filter by keyword (e.g.: bank, BBCA, TLKM). "
+                "Returns a list of stocks with price, change %, volume, market cap, sector, etc. "
+                "Use when user asks about Indonesian stock prices, IDX stocks, or checking a specific stock."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "query": {
                         "type": ["string", "null"],
-                        "description": "Kata kunci pencarian (nama emiten atau sektor), opsional. Contoh: bank, BBCA, telkom.",
+                        "description":                         "Search keyword (issuer name or sector), optional. e.g.: bank, BBCA, telkom.",
                     },
                     "limit": {
                         "type": "integer",
-                        "description": "Jumlah hasil maksimal (default 20).",
+                        "description":                         "Maximum number of results (default 20).",
                         "default": 20,
                     },
                 },
@@ -32,21 +32,21 @@ SCHEMAS = [
         "function": {
             "name": "get_forex_price",
             "description": (
-                "Cek harga pasangan forex (valas) dari TradingView. "
-                "Bisa filter dengan simbol (misal: USD, EURUSD, GBPUSD). "
-                "Mengembalikan daftar pair dengan price, change %, open, high, low, weekly/monthly performance. "
-                "Gunakan ketika user tanya harga forex, kurs valas, atau pair tertentu."
+                "Check forex pair prices from TradingView. "
+                "Can filter by symbol (e.g.: USD, EURUSD, GBPUSD). "
+                "Returns a list of pairs with price, change %, open, high, low, weekly/monthly performance. "
+                "Use when user asks about forex prices, exchange rates, or a specific pair."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "symbol": {
                         "type": ["string", "null"],
-                        "description": "Filter simbol pair, opsional. Contoh: USD, EURUSD, GBPUSD.",
+                        "description":                         "Pair symbol filter, optional. e.g.: USD, EURUSD, GBPUSD.",
                     },
                     "limit": {
                         "type": "integer",
-                        "description": "Jumlah hasil maksimal (default 15).",
+                        "description": "Maximum number of results (default 15).",
                         "default": 15,
                     },
                 },
@@ -58,21 +58,21 @@ SCHEMAS = [
         "function": {
             "name": "get_crypto_price",
             "description": (
-                "Cek harga kripto dari TradingView. "
-                "Bisa filter dengan simbol (misal: BTC, ETH, BNB). "
-                "Mengembalikan daftar kripto dengan price, change %, volume, weekly/monthly performance. "
-                "Gunakan ketika user tanya harga crypto, bitcoin, ethereum, atau kripto lainnya."
+                "Check crypto prices from TradingView. "
+                "Can filter by symbol (e.g.: BTC, ETH, BNB). "
+                "Returns a list of cryptos with price, change %, volume, weekly/monthly performance. "
+                "Use when user asks about crypto prices, bitcoin, ethereum, or other cryptos."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "symbol": {
                         "type": ["string", "null"],
-                        "description": "Filter simbol kripto, opsional. Contoh: BTC, ETH, BNB.",
+                        "description":                         "Crypto symbol filter, optional. e.g.: BTC, ETH, BNB.",
                     },
                     "limit": {
                         "type": "integer",
-                        "description": "Jumlah hasil maksimal (default 15).",
+                        "description": "Maximum number of results (default 15).",
                         "default": 15,
                     },
                 },

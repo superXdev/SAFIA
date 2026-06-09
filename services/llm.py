@@ -19,6 +19,7 @@ from openai import (
 from config import GROQ_API_KEY, GROQ_BASE_URL, LLM_CHAT_API_KEY, LLM_CHAT_BASE_URL, LLM_MODEL as MODEL
 from services.chat_history import mark_user_active_today
 from services.database import increment_daily_metrics
+from services.memory import search_memories as _search_user_memories
 from services.summaries import get_financial_summary, get_portfolio_summary
 from services.tools import TOOLS, run_tool
 
@@ -90,6 +91,9 @@ _EXTERNAL_TOOL_STATUS_TEXT: dict[str, str] = {
     "asset_sell": "Processing sale...",
     "debt_record": "Logging debt...",
     "reminder_create": "Setting up reminder...",
+    "remember_fact": "Remembering...",
+    "recall_memories": "Recalling memories...",
+    "forget_fact": "Forgetting...",
 }
 
 
@@ -135,6 +139,21 @@ async def _build_financial_context(user_id: int) -> str:
         return "\n\n**Your current financial snapshot (use this to personalize responses):**\n" + "\n".join(f"- {p}" for p in parts)
     except Exception:
         logging.debug("Failed to build financial context for user %s", user_id)
+        return ""
+
+
+async def _build_memory_context(user_id: int, query: str) -> str:
+    """Search long-term memories for the user and format for system-prompt injection."""
+    if not query.strip():
+        return ""
+    try:
+        memories = await _search_user_memories(user_id, query)
+        if not memories:
+            return ""
+        lines = [f"- [{m['category']}] {m['fact']}" for m in memories[:5]]
+        return "\n\n**Relevant memories about this user:**\n" + "\n".join(lines)
+    except Exception:
+        logging.debug("Failed to build memory context for user %s", user_id)
         return ""
 
 
@@ -232,7 +251,14 @@ async def chat(
         now = datetime.now(WIB)
         time_line = f"\n\nCurrent date and time: {now.strftime('%A, %d %B %Y, %H:%M')} WIB (UTC+7)."
         ctx = await _build_financial_context(user_id)
-        current[0] = {"role": "system", "content": current[0].get("content") + time_line + ctx}
+
+        # Inject relevant long-term memories
+        user_query = next(
+            (m.get("content", "") for m in reversed(current) if m.get("role") == "user"), ""
+        )
+        memory_section = await _build_memory_context(user_id, user_query)
+
+        current[0] = {"role": "system", "content": current[0].get("content") + time_line + ctx + memory_section}
 
     try:
         for round_num in range(1, MAX_TOOL_ROUNDS + 1):

@@ -6,18 +6,18 @@ SCHEMAS = [
         "function": {
             "name": "news_search_macro",
             "description": (
-                "Cari berita terkini tentang peristiwa aset, keuangan, atau makro ekonomi. "
-                "HANYA gunakan tool ini untuk topik terkait pasar keuangan, investasi, aset (emas, saham, crypto, dll), "
-                "mata uang/kurs, inflasi, suku bunga, kebijakan bank sentral, atau kondisi ekonomi makro. "
-                "JANGAN gunakan untuk berita umum/non-keuangan. "
-                "Tool ini mencari di web, memilih 5 sumber relevan, meringkas, lalu menjawab."
+                "Search latest news about asset, financial, or macro-economic events. "
+                "ONLY use this tool for topics related to financial markets, investments, assets (gold, stocks, crypto, etc.), "
+                "currency/exchange rates, inflation, interest rates, central bank policy, or macro-economic conditions. "
+                "DO NOT use for general/non-financial news. "
+                "This tool searches the web, selects 5 relevant sources, summarizes, then answers."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "question": {
                         "type": "string",
-                        "description": "Pertanyaan user tentang peristiwa aset/keuangan/makro (bahasa user).",
+                        "description":                         "User's question about asset/financial/macro events (in user's language).",
                     },
                 },
                 "required": ["question"],

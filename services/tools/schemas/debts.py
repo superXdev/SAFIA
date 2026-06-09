@@ -6,9 +6,9 @@ SCHEMAS = [
         "function": {
             "name": "debt_record",
             "description": (
-                "Catat utang atau piutang user. Panggil ketika user menyebut meminjam uang dari "
-                "seseorang (utang/borrowed) atau meminjamkan uang ke seseorang (piutang/lent). "
-                "Tool ini menyimpan data dan mengembalikan JSON."
+                "Record a user's debt or lent money. Call when user mentions borrowing money from "
+                "someone (debt/borrowed) or lending money to someone (lent). "
+                "This tool stores data and returns JSON."
             ),
             "parameters": {
                 "type": "object",
@@ -16,16 +16,16 @@ SCHEMAS = [
                     "direction": {
                         "type": "string",
                         "enum": ["lent", "borrowed"],
-                        "description": "'lent' jika user meminjamkan uang ke orang lain (piutang), 'borrowed' jika user meminjam dari orang lain (utang).",
+                        "description":                         "'lent' if user lends money to someone else (piutang), 'borrowed' if user borrows from someone else (utang).",
                     },
                     "person": {
                         "type": "string",
-                        "description": "Nama orang yang terkait utang/piutang.",
+                        "description":                         "Name of the person related to the debt/lent.",
                     },
-                    "amount": {"type": "number", "description": "Jumlah uang (angka)"},
+                    "amount": {"type": "number", "description": "Amount of money (number)"},
                     "description": {
                         "type": ["string", "null"],
-                        "description": "Keterangan (opsional)",
+                        "description":                         "Description (optional)",
                     },
                 },
                 "required": ["direction", "person", "amount"],
@@ -37,8 +37,8 @@ SCHEMAS = [
         "function": {
             "name": "get_debts",
             "description": (
-                "Ambil daftar utang/piutang user. Gunakan ketika user minta lihat daftar "
-                "utang atau piutang, siapa yang berutang, atau berapa total utang/piutang."
+                "Get the user's debt/lent list. Use when user asks to see their "
+                "debt or lent list, who owes money, or total debt/lent."
             ),
             "parameters": {
                 "type": "object",
@@ -46,15 +46,15 @@ SCHEMAS = [
                     "direction": {
                         "type": ["string", "null"],
                         "enum": ["lent", "borrowed", None],
-                        "description": "Filter: 'lent' (piutang) atau 'borrowed' (utang). Opsional.",
+                        "description":                         "Filter: 'lent' or 'borrowed' (debt). Optional.",
                     },
                     "person": {
                         "type": ["string", "null"],
-                        "description": "Filter berdasarkan nama orang. Opsional.",
+                        "description":                         "Filter by person name. Optional.",
                     },
                     "is_settled": {
                         "type": ["boolean", "null"],
-                        "description": "Filter: true = sudah lunas, false = belum lunas. Opsional.",
+                        "description":                         "Filter: true = settled, false = not settled. Optional.",
                     },
                 },
             },
@@ -65,8 +65,8 @@ SCHEMAS = [
         "function": {
             "name": "settle_debt",
             "description": (
-                "Tandai utang/piutang sebagai lunas. Gunakan ketika user menyebut sudah "
-                "membayar utang atau sudah menerima pembayaran piutang."
+                "Mark debt/lent as settled. Use when user mentions having "
+                "paid a debt or received a lent payment."
             ),
             "parameters": {
                 "type": "object",
@@ -74,7 +74,7 @@ SCHEMAS = [
                     "debt_ids": {
                         "type": "array",
                         "items": {"type": "integer"},
-                        "description": "Daftar ID utang/piutang yang ingin dilunasi.",
+                        "description":                         "List of debt/lent IDs to settle.",
                     },
                 },
                 "required": ["debt_ids"],
@@ -86,8 +86,8 @@ SCHEMAS = [
         "function": {
             "name": "delete_debt",
             "description": (
-                "Hapus catatan utang/piutang user. Gunakan ketika user minta hapus "
-                "catatan utang/piutang tertentu."
+                "Delete a user's debt/lent record. Use when user asks to delete "
+                "a specific debt/lent record."
             ),
             "parameters": {
                 "type": "object",
@@ -95,7 +95,7 @@ SCHEMAS = [
                     "debt_ids": {
                         "type": "array",
                         "items": {"type": "integer"},
-                        "description": "Daftar ID utang/piutang yang ingin dihapus.",
+                        "description":                         "List of debt/lent IDs to delete.",
                     },
                 },
                 "required": ["debt_ids"],
@@ -107,9 +107,9 @@ SCHEMAS = [
         "function": {
             "name": "reset_debts",
             "description": (
-                "Hapus semua data utang/piutang user (reset/erase seluruh database utang). "
-                "Gunakan hanya ketika user dengan tegas minta reset atau hapus semua utang/piutang. "
-                "Konfirmasi dulu sebelum memanggil."
+                "Delete all user debt/lent data (reset/erase entire debt database). "
+                "Use only when user explicitly asks to reset or delete all debts/lent. "
+                "Confirm first before calling."
             ),
             "parameters": {"type": "object", "properties": {}},
         },

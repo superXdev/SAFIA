@@ -6,21 +6,21 @@ SCHEMAS = [
         "function": {
             "name": "expense_record",
             "description": (
-                "Catat pengeluaran (expense) user. Panggil ketika user menyebut mengeluarkan uang "
-                "atau pengeluaran. Tool ini hanya menyimpan data mentah dan mengembalikan JSON; "
-                "kamu yang harus menjelaskan ke user dengan gaya yang natural."
+                "Record a user's expense. Call when user mentions spending money "
+                "or an expense. This tool only stores raw data and returns JSON; "
+                "you must explain to the user in a natural tone."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "amount": {"type": "number", "description": "Jumlah uang (angka)"},
+                    "amount": {"type": "number", "description": "Amount of money (number)"},
                     "description": {
                         "type": ["string", "null"],
-                        "description": "Keterangan (opsional)",
+                        "description": "Description (optional)",
                     },
                     "category": {
                         "type": ["string", "null"],
-                        "description": "Nama kategori (opsional), misal: Makanan, Transport, Gaji, Bonus",
+                        "description": "Category name (optional), e.g.: Food, Transport, Salary, Bonus",
                     },
                 },
                 "required": ["amount"],
@@ -32,21 +32,21 @@ SCHEMAS = [
         "function": {
             "name": "income_record",
             "description": (
-                "Catat pemasukan (income) user. Panggil ketika user menyebut menerima uang atau "
-                "pemasukan. Tool ini hanya menyimpan data mentah dan mengembalikan JSON; "
-                "kamu yang harus menjelaskan ke user dengan gaya yang natural."
+                "Record a user's income. Call when user mentions receiving money or "
+                "income. This tool only stores raw data and returns JSON; "
+                "you must explain to the user in a natural tone."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "amount": {"type": "number", "description": "Jumlah uang (angka)"},
+                    "amount": {"type": "number", "description": "Amount of money (number)"},
                     "description": {
                         "type": ["string", "null"],
-                        "description": "Keterangan (opsional)",
+                        "description": "Description (optional)",
                     },
                     "category": {
                         "type": ["string", "null"],
-                        "description": "Nama kategori (opsional), misal: Makanan, Transport, Gaji, Bonus",
+                        "description": "Category name (optional), e.g.: Food, Transport, Salary, Bonus",
                     },
                 },
                 "required": ["amount"],
@@ -58,37 +58,37 @@ SCHEMAS = [
         "function": {
             "name": "get_records",
             "description": (
-                "Ambil catatan pemasukan/pengeluaran user dengan filter opsional dan kembalikan "
-                "data mentah dalam bentuk JSON. Gunakan ketika user minta lihat riwayat/laporan "
-                "keuangan detail (misal berdasarkan rentang tanggal, jenis income/expense, kategori, "
-                "atau rentang jumlah uang), lalu jelaskan hasilnya dengan bahasamu sendiri."
+                "Get the user's income/expense records with optional filters and return "
+                "raw data as JSON. Use when user asks to see detailed financial "
+                "history/report (e.g. by date range, income/expense type, category, "
+                "or amount range), then explain the results in your own words."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "kind": {
                         "type": ["string", "null"],
-                        "description": "Jenis catatan yang ingin diambil: 'income' atau 'expense'. Opsional.",
+                        "description":                         "Type of record to fetch: 'income' or 'expense'. Optional.",
                     },
                     "category": {
                         "type": ["string", "null"],
-                        "description": "Filter berdasarkan kategori tertentu. Opsional.",
+                        "description": "Filter by specific category. Optional.",
                     },
                     "min_amount": {
                         "type": ["number", "null"],
-                        "description": "Jumlah minimum (>=). Opsional.",
+                        "description": "Minimum amount (>=). Optional.",
                     },
                     "max_amount": {
                         "type": ["number", "null"],
-                        "description": "Jumlah maksimum (<=). Opsional.",
+                        "description": "Maximum amount (<=). Optional.",
                     },
                     "from_date": {
                         "type": ["string", "null"],
-                        "description": "Tanggal mulai (YYYY-MM-DD). Opsional.",
+                        "description": "Start date (YYYY-MM-DD). Optional.",
                     },
                     "to_date": {
                         "type": ["string", "null"],
-                        "description": "Tanggal akhir (YYYY-MM-DD). Opsional.",
+                        "description": "End date (YYYY-MM-DD). Optional.",
                     },
                 },
             },
@@ -99,38 +99,38 @@ SCHEMAS = [
         "function": {
             "name": "get_records_summary",
             "description": (
-                "Ambil ringkasan agregat keuangan user: total pemasukan, total pengeluaran, "
-                "saldo bersih (net), total_balance (saldo keseluruhan termasuk utang/piutang), "
-                "ringkasan per kategori, serta total piutang dan utang yang belum lunas. "
-                "Gunakan ketika user minta cek saldo, analisis kebiasaan keuangan, atau ringkasan "
-                "periode tertentu, lalu jelaskan hasilnya dengan bahasamu sendiri."
+                "Get the user's aggregate financial summary: total income, total expense, "
+                "net balance, total_balance (overall balance including debt/lent), "
+                "summary per category, and total outstanding lent and debt. "
+                "Use when user asks to check balance, analyze spending habits, or a summary "
+                "for a specific period, then explain the results in your own words."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "kind": {
                         "type": ["string", "null"],
-                        "description": "Jenis catatan yang ingin diringkas: 'income' atau 'expense'. Opsional.",
+                        "description":                         "Type of record to summarize: 'income' or 'expense'. Optional.",
                     },
                     "category": {
                         "type": ["string", "null"],
-                        "description": "Filter berdasarkan kategori tertentu. Opsional.",
+                        "description": "Filter by specific category. Optional.",
                     },
                     "min_amount": {
                         "type": ["number", "null"],
-                        "description": "Jumlah minimum (>=). Opsional.",
+                        "description": "Minimum amount (>=). Optional.",
                     },
                     "max_amount": {
                         "type": ["number", "null"],
-                        "description": "Jumlah maksimum (<=). Opsional.",
+                        "description": "Maximum amount (<=). Optional.",
                     },
                     "from_date": {
                         "type": ["string", "null"],
-                        "description": "Tanggal mulai (YYYY-MM-DD). Opsional.",
+                        "description": "Start date (YYYY-MM-DD). Optional.",
                     },
                     "to_date": {
                         "type": ["string", "null"],
-                        "description": "Tanggal akhir (YYYY-MM-DD). Opsional.",
+                        "description": "End date (YYYY-MM-DD). Optional.",
                     },
                 },
             },
@@ -141,10 +141,10 @@ SCHEMAS = [
         "function": {
             "name": "delete_records",
             "description": (
-                "Hapus catatan pemasukan/pengeluaran user. Bisa hapus berdasarkan ID spesifik, "
-                "jenis (income/expense), kategori, atau rentang tanggal. Gunakan ketika user "
-                "minta hapus catatan tertentu. Selalu konfirmasi dulu sebelum menghapus, dan "
-                "laporkan berapa catatan yang terhapus."
+                "Delete user's income/expense records. Can delete by specific ID, "
+                "type (income/expense), category, or date range. Use when user "
+                "asks to delete specific records. Always confirm first before deleting, and "
+                "report how many records were deleted."
             ),
             "parameters": {
                 "type": "object",
@@ -152,23 +152,23 @@ SCHEMAS = [
                     "record_ids": {
                         "type": ["array", "null"],
                         "items": {"type": "integer"},
-                        "description": "Daftar ID catatan yang ingin dihapus. Opsional.",
+                        "description":                         "List of record IDs to delete. Optional.",
                     },
                     "kind": {
                         "type": ["string", "null"],
-                        "description": "Jenis catatan yang ingin dihapus: 'income' atau 'expense'. Opsional.",
+                        "description":                         "Type of record to delete: 'income' or 'expense'. Optional.",
                     },
                     "category": {
                         "type": ["string", "null"],
-                        "description": "Hapus catatan berdasarkan kategori tertentu. Opsional.",
+                        "description":                         "Delete records by specific category. Optional.",
                     },
                     "from_date": {
                         "type": ["string", "null"],
-                        "description": "Tanggal mulai (YYYY-MM-DD). Opsional.",
+                        "description": "Start date (YYYY-MM-DD). Optional.",
                     },
                     "to_date": {
                         "type": ["string", "null"],
-                        "description": "Tanggal akhir (YYYY-MM-DD). Opsional.",
+                        "description": "End date (YYYY-MM-DD). Optional.",
                     },
                 },
             },
@@ -179,9 +179,9 @@ SCHEMAS = [
         "function": {
             "name": "reset_records",
             "description": (
-                "Hapus semua catatan pemasukan/pengeluaran user (reset/erase seluruh database records). "
-                "Gunakan hanya ketika user dengan tegas minta reset atau hapus semua catatan keuangan. "
-                "Konfirmasi dulu sebelum memanggil."
+                "Delete all user income/expense records (reset/erase entire records database). "
+                "Use only when user explicitly asks to reset or delete all financial records. "
+                "Confirm first before calling."
             ),
             "parameters": {"type": "object", "properties": {}},
         },

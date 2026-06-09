@@ -6,12 +6,12 @@ SCHEMAS = [
         "function": {
             "name": "reminder_create",
             "description": (
-                "Buat pengingat otomatis untuk user. Jenis pengingat: "
-                "price (cek harga aset), news (cari berita keuangan), "
-                "note_expense/note_income (pengingat catat pengeluaran/pemasukan), "
-                "portfolio_digest (ringkasan portofolio), custom (pesan kustom). "
-                "Frekuensi: daily, weekly, monthly, atau interval. "
-                "Untuk interval gunakan interval_hours (jam, boleh desimal: 0.5 = 30 menit)."
+                "Create an automatic reminder for user. Reminder types: "
+                "price (check asset prices), news (search financial news), "
+                "note_expense/note_income (reminder to record expenses/income), "
+                "portfolio_digest (portfolio summary), custom (custom message). "
+                "Frequency: daily, weekly, monthly, or interval. "
+                "For interval use interval_hours (hours, accepts decimals: 0.5 = 30 minutes)."
             ),
             "parameters": {
                 "type": "object",
@@ -22,49 +22,49 @@ SCHEMAS = [
                             "price", "news", "note_expense",
                             "note_income", "portfolio_digest", "custom",
                         ],
-                        "description": "Jenis pengingat.",
+                        "description":                         "Reminder type.",
                     },
                     "title": {
                         "type": "string",
-                        "description": "Judul/label singkat pengingat.",
+                        "description":                         "Short title/label for the reminder.",
                     },
                     "schedule_type": {
                         "type": "string",
                         "enum": ["daily", "weekly", "monthly", "interval"],
-                        "description": "Tipe jadwal: daily, weekly, monthly, atau interval.",
+                        "description":                         "Schedule type: daily, weekly, monthly, or interval.",
                     },
                     "hour": {
                         "type": "integer",
-                        "description": "Jam lokal WIB (0-23) untuk eksekusi. Default 8.",
+                        "description":                         "Local time hour in WIB (0-23) for execution. Default 8.",
                         "default": 8,
                     },
                     "minute": {
                         "type": "integer",
-                        "description": "Menit (0-59). Default 0.",
+                        "description":                         "Minute (0-59). Default 0.",
                         "default": 0,
                     },
                     "day": {
                         "type": ["string", "null"],
-                        "description": "Hari (untuk weekly): monday, tuesday, ..., sunday.",
+                        "description":                         "Day (for weekly): monday, tuesday, ..., sunday.",
                     },
                     "day_of_month": {
                         "type": ["integer", "null"],
-                        "description": "Tanggal (untuk monthly): 1-28.",
+                        "description":                         "Day of month (for monthly): 1-28.",
                     },
                     "interval_hours": {
                         "type": ["number", "null"],
                         "description": (
-                            "Interval dalam jam (wajib jika schedule_type=interval). "
-                            "Boleh desimal, contoh: 1, 0.5 (30 menit), 0.25 (15 menit). Min ~0.017 (~1 menit)."
+                        "Interval in hours (required if schedule_type=interval). "
+                        "Accepts decimals, e.g.: 1, 0.5 (30 minutes), 0.25 (15 minutes). Min ~0.017 (~1 minute)."
                         ),
                     },
                     "payload": {
                         "type": ["object", "null"],
                         "description": (
-                            "Data tambahan sesuai jenis: "
-                            'price → {"symbols": ["BTC", "AAPL"], "asset_types": ["crypto", "stock"]}; '
-                            'news → {"query": "harga emas"}; '
-                            'custom → {"message": "teks pesan"}. Opsional.'
+                        "Additional data by type: "
+                        'price → {"symbols": ["BTC", "AAPL"], "asset_types": ["crypto", "stock"]}; '
+                        'news → {"query": "harga emas"}; '
+                        'custom → {"message": "message text"}. Optional.'
                         ),
                     },
                 },
@@ -76,7 +76,7 @@ SCHEMAS = [
         "type": "function",
         "function": {
             "name": "reminder_list",
-            "description": "Lihat daftar semua pengingat user (aktif dan nonaktif).",
+            "description": "View all user reminders (active and inactive).",
             "parameters": {"type": "object", "properties": {}},
         },
     },
@@ -85,15 +85,15 @@ SCHEMAS = [
         "function": {
             "name": "reminder_pause",
             "description": (
-                "Nonaktifkan pengingat (pause). Pengingat tidak akan dijalankan "
-                "sampai diaktifkan kembali."
+                "Deactivate a reminder (pause). The reminder will not run "
+                "until reactivated."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "reminder_id": {
                         "type": "integer",
-                        "description": "ID pengingat yang ingin dinonaktifkan.",
+                        "description":                         "ID of the reminder to deactivate.",
                     },
                 },
                 "required": ["reminder_id"],
@@ -104,13 +104,13 @@ SCHEMAS = [
         "type": "function",
         "function": {
             "name": "reminder_resume",
-            "description": "Aktifkan kembali pengingat yang sudah di-pause.",
+            "description": "Reactivate a paused reminder.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "reminder_id": {
                         "type": "integer",
-                        "description": "ID pengingat yang ingin diaktifkan kembali.",
+                        "description":                         "ID of the reminder to reactivate.",
                     },
                 },
                 "required": ["reminder_id"],
@@ -121,13 +121,13 @@ SCHEMAS = [
         "type": "function",
         "function": {
             "name": "reminder_delete",
-            "description": "Hapus pengingat secara permanen.",
+            "description": "Permanently delete a reminder.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "reminder_id": {
                         "type": "integer",
-                        "description": "ID pengingat yang ingin dihapus.",
+                        "description":                         "ID of the reminder to delete.",
                     },
                 },
                 "required": ["reminder_id"],
@@ -139,9 +139,9 @@ SCHEMAS = [
         "function": {
             "name": "reminder_suggest_from_habits",
             "description": (
-                "Analisis kebiasaan keuangan user (pola pencatatan, pembelian aset) "
-                "dan sarankan pengingat otomatis yang relevan. User bisa konfirmasi "
-                "saran yang diinginkan lalu buat dengan reminder_create."
+                "Analyze user's financial habits (recording patterns, asset purchases) "
+                "and suggest relevant automatic reminders. User can confirm "
+                "desired suggestions then create them with reminder_create."
             ),
             "parameters": {"type": "object", "properties": {}},
         },

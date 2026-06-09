@@ -101,6 +101,9 @@ QDRANT_PATH = os.environ.get("QDRANT_PATH", "data/qdrant")
 QDRANT_URL = os.environ.get("QDRANT_URL", "")
 QDRANT_API_KEY = os.environ.get("QDRANT_API_KEY", "") or None
 KB_COLLECTION_NAME = os.environ.get("KB_COLLECTION_NAME", "safia_kb")
+MEMORY_COLLECTION_NAME = os.environ.get("MEMORY_COLLECTION_NAME", "safia_user_memories")
+MEMORY_SEARCH_LIMIT = 5
+MEMORY_SCORE_THRESHOLD = float(os.environ.get("MEMORY_SCORE_THRESHOLD", "0.45"))
 
 # -----------------------------------------------------------------------------
 # Embeddings — local (fastembed) by default; set EMBEDDING_LOCAL=false for remote

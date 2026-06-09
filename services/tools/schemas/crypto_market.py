@@ -6,22 +6,22 @@ SCHEMAS = [
         "function": {
             "name": "get_top_crypto_market_cap",
             "description": (
-                "Ambil daftar kripto teratas berdasarkan market cap dari CoinGecko. "
-                "Mengembalikan ranking, nama, simbol, harga, perubahan 24 jam, market cap, volume. "
-                "Gunakan ketika user tanya top crypto, market cap tertinggi, ranking kripto, "
-                "atau daftar crypto berdasarkan kapitalisasi pasar."
+                "Get the top crypto list by market cap from CoinGecko. "
+                "Returns ranking, name, symbol, price, 24h change, market cap, volume. "
+                "Use when user asks about top crypto, highest market cap, crypto ranking, "
+                "or crypto list by market capitalization."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "vs_currency": {
                         "type": "string",
-                        "description": "Mata uang target untuk harga (e.g. usd, idr, eur). Default: usd.",
+                        "description":                         "Target currency for price (e.g. usd, idr, eur). Default: usd.",
                         "default": "usd",
                     },
                     "limit": {
                         "type": "integer",
-                        "description": "Jumlah koin yang ditampilkan (default 10, max 250).",
+                        "description":                         "Number of coins to display (default 10, max 250).",
                         "default": 10,
                     },
                 },
@@ -33,17 +33,17 @@ SCHEMAS = [
         "function": {
             "name": "get_coin_detail",
             "description": (
-                "Ambil detail lengkap satu koin kripto dari CoinGecko berdasarkan coin ID. "
-                "Mengembalikan deskripsi, harga, market cap, ATH/ATL, supply, perubahan 24h/7d/30d, kategori, dan link. "
-                "Gunakan ketika user tanya detail tentang koin tertentu seperti bitcoin, ethereum, solana, dll. "
-                "Coin ID biasanya lowercase, contoh: bitcoin, ethereum, solana, ripple, dogecoin, cardano."
+                "Get full details of a single crypto coin from CoinGecko by coin ID. "
+                "Returns description, price, market cap, ATH/ATL, supply, 24h/7d/30d changes, categories, and links. "
+                "Use when user asks for details about a specific coin like bitcoin, ethereum, solana, etc. "
+                "Coin ID is usually lowercase, e.g.: bitcoin, ethereum, solana, ripple, dogecoin, cardano."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "coin_id": {
                         "type": "string",
-                        "description": "CoinGecko coin ID (lowercase). Contoh: bitcoin, ethereum, solana, ripple, dogecoin, binancecoin.",
+                        "description":                         "CoinGecko coin ID (lowercase). e.g.: bitcoin, ethereum, solana, ripple, dogecoin, binancecoin.",
                     },
                 },
                 "required": ["coin_id"],
@@ -55,9 +55,9 @@ SCHEMAS = [
         "function": {
             "name": "get_trending_crypto",
             "description": (
-                "Ambil daftar kripto yang sedang trending (paling banyak dicari) di CoinGecko dalam 24 jam terakhir. "
-                "Mengembalikan top 15 koin trending beserta harga, market cap, dan perubahan 24 jam. "
-                "Gunakan ketika user tanya crypto apa yang lagi trending, viral, naik daun, atau populer saat ini."
+                "Get the list of trending (most searched) crypto on CoinGecko in the last 24 hours. "
+                "Returns top 15 trending coins with price, market cap, and 24h change. "
+                "Use when user asks what crypto is trending, viral, gaining popularity, or currently popular."
             ),
             "parameters": {"type": "object", "properties": {}},
         },
@@ -67,16 +67,16 @@ SCHEMAS = [
         "function": {
             "name": "search_crypto",
             "description": (
-                "Cari nama atau simbol kripto untuk mendapatkan CoinGecko coin ID yang tepat. "
-                "Penting digunakan jika 'get_coin_detail' gagal karena coin ID tidak tepat (misal: user ketik 'BNB', ID yang benar adalah 'binancecoin'). "
-                "Mengembalikan daftar prediksi koin teratas yang cocok dengan nama atau simbol yang dicari."
+                "Search crypto name or symbol to get the correct CoinGecko coin ID. "
+                "Important to use if 'get_coin_detail' fails due to incorrect coin ID (e.g.: user types 'BNB', the correct ID is 'binancecoin'). "
+                "Returns a list of top coin predictions matching the searched name or symbol."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "query": {
                         "type": "string",
-                        "description": "Nama atau simbol koin yang dicari. Contoh: bnb, xrp, shiba inu, doge.",
+                        "description":                         "Coin name or symbol to search. e.g.: bnb, xrp, shiba inu, doge.",
                     },
                 },
                 "required": ["query"],

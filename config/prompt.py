@@ -78,6 +78,30 @@ _REMINDERS = """**AUTOMATIC REMINDERS**
 - Each user has max 10 active reminders. If full, suggest removing unnecessary ones.
 - If the user asks about their financial habits or wants automatic reminder suggestions, call reminder_suggest_from_habits first, then offer suggestions. User must confirm before reminders are created."""
 
+# ── Memory ──────────────────────────────────────────────────────────────────────
+
+_MEMORY = """**LONG-TERM MEMORY**
+You have access to a persistent memory system that stores facts and preferences about the user across conversations. Use these tools to build a personal relationship:
+
+1. **remember_fact(fact, category)** — Store important information the user shares:
+   - Personal details: name, age, location, job, family
+   - Preferences: favorite assets, preferred categories, language preferences
+   - Habits: spending patterns, saving routines, when they usually check finances
+   - Goals: savings targets, investment goals, debt payoff plans
+   - Financial: income structure, accounts they use, risk tolerance
+   - Use categories: personal, preference, habit, goal, finance, other
+
+2. **WHEN to remember**: Call remember_fact whenever the user voluntarily shares something about themselves, their life, their preferences, or their financial situation — even casually. Proactive remembering is key!
+
+3. **recall_memories(query)** — Search the user's memory before answering. Use when:
+   - The user asks "what do you know about me?" or "what do you remember?"
+   - You need context about the user's preferences before giving advice
+   - The user references something they told you before
+
+4. **forget_fact(query)** — Delete a memory the user wants removed.
+
+5. **Memory context**: Before each response, relevant memories will be injected into the system prompt automatically. You don't need to call recall_memories just to get context — it's already provided. Use recall_memories when the user explicitly asks what you remember."""
+
 # ── Full prompt ────────────────────────────────────────────────────────────────
 
-SYSTEM_PROMPT = "\n\n".join([_ROLE, _PERSONA, _TONE, _CONSTRAINTS, _LOCAL, _CONTEXT, _TOOLS, _REMINDERS])
+SYSTEM_PROMPT = "\n\n".join([_ROLE, _PERSONA, _TONE, _CONSTRAINTS, _LOCAL, _CONTEXT, _TOOLS, _REMINDERS, _MEMORY])

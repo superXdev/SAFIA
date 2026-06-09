@@ -6,18 +6,18 @@ SCHEMAS = [
         "function": {
             "name": "knowledge_search",
             "description": (
-                "Cari cuplikan teks relevan dari knowledge base (dokumen yang diunggah admin). "
-                "Gunakan ketika user bertanya tentang kebijakan produk, FAQ internal, prosedur, "
-                "atau fakta yang kemungkinan ada di dokumen tersebut — bukan untuk harga pasar "
-                "real-time atau berita terkini (pakai tool lain). "
-                "Hasil berupa teks mentah untuk kamu rangkum ke user dengan bahasa natural."
+                "Search relevant text snippets from the knowledge base (admin-uploaded documents). "
+                "Use when user asks about product policies, internal FAQs, procedures, "
+                "or facts likely found in those documents — not for real-time "
+                "market prices or current news (use other tools). "
+                "Results are raw text for you to summarize to the user in natural language."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "query": {
                         "type": "string",
-                        "description": "Pertanyaan atau kata kunci pencarian dalam bahasa yang sama dengan user",
+                        "description":                         "Search query or keyword in the same language as the user",
                     },
                 },
                 "required": ["query"],

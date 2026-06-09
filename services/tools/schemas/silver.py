@@ -6,9 +6,9 @@ SCHEMAS = [
         "function": {
             "name": "get_silver_price",
             "description": (
-                "Ambil harga perak (silver) spot hari ini dalam IDR dari bullion-rates.com. "
-                "Mengembalikan harga per gram, per ounce, dan per kilo. "
-                "Gunakan ketika user tanya harga perak, silver price, atau perak hari ini."
+                "Get today's spot silver price in IDR from bullion-rates.com. "
+                "Returns price per gram, per ounce, and per kilo. "
+                "Use when user asks about silver price or today's silver rate."
             ),
             "parameters": {"type": "object", "properties": {}},
         },

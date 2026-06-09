@@ -11,6 +11,7 @@ from services.tools.currency import HANDLERS as CURRENCY_HANDLERS
 from services.tools.debts import HANDLERS as DEBT_HANDLERS
 from services.tools.gold import HANDLERS as GOLD_HANDLERS
 from services.tools.knowledge_search import HANDLERS as KNOWLEDGE_HANDLERS
+from services.tools.memory import HANDLERS as MEMORY_HANDLERS
 from services.tools.news_search import HANDLERS as NEWS_SEARCH_HANDLERS
 from services.tools.prices import HANDLERS as PRICE_HANDLERS
 from services.tools.records import HANDLERS as RECORD_HANDLERS
@@ -29,6 +30,7 @@ _HANDLERS: dict[str, Any] = {
     **NEWS_SEARCH_HANDLERS,
     **KNOWLEDGE_HANDLERS,
     **REMINDER_HANDLERS,
+    **MEMORY_HANDLERS,
 }
 
 
