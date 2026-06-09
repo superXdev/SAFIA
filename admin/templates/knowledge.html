@@ -1,100 +1,13 @@
 {% extends "base.html" %}
 
 {% block content %}
-<style>
-  .kb-flash {
-    margin-bottom: 20px;
-    padding: 14px 18px;
-    border-radius: var(--radius-md);
-    font-size: 14px;
-    line-height: 1.5;
-    border: 1px solid var(--border);
-  }
-  .kb-flash.success {
-    border-color: rgba(52, 211, 153, 0.35);
-    background: rgba(52, 211, 153, 0.08);
-    color: var(--emerald);
-  }
-  .kb-flash.error {
-    border-color: rgba(251, 113, 133, 0.35);
-    background: rgba(251, 113, 133, 0.08);
-    color: var(--rose);
-  }
-  .kb-grid {
-    display: grid;
-    gap: 24px;
-    grid-template-columns: minmax(280px, 360px) 1fr;
-    align-items: start;
-  }
-  @media (max-width: 920px) {
-    .kb-grid { grid-template-columns: 1fr; }
-  }
-  .kb-form label {
-    display: block;
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--text-tertiary);
-    margin-bottom: 8px;
-  }
-  .kb-form input[type="text"],
-  .kb-form input[type="file"] {
-    width: 100%;
-    padding: 10px 12px;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border);
-    background: rgba(0,0,0,0.25);
-    color: var(--text-primary);
-    font-family: var(--font-sans);
-    font-size: 14px;
-  }
-  .kb-form input[type="file"] { padding: 8px; cursor: pointer; }
-  .kb-form .field { margin-bottom: 16px; }
-  .kb-submit {
-    margin-top: 8px;
-    padding: 10px 20px;
-    border-radius: var(--radius-sm);
-    border: 1px solid rgba(129, 140, 248, 0.4);
-    background: rgba(129, 140, 248, 0.12);
-    color: var(--accent);
-    font-weight: 600;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all var(--transition-fast);
-  }
-  .kb-submit:hover {
-    background: rgba(129, 140, 248, 0.2);
-    border-color: rgba(129, 140, 248, 0.6);
-  }
-  .kb-hint {
-    font-size: 12px;
-    color: var(--text-tertiary);
-    margin-top: 12px;
-    line-height: 1.5;
-  }
-  .kb-mono { font-family: var(--font-mono); font-size: 12px; }
-  .btn-del {
-    padding: 6px 12px;
-    border-radius: var(--radius-sm);
-    border: 1px solid rgba(251, 113, 133, 0.35);
-    background: rgba(251, 113, 133, 0.08);
-    color: var(--rose);
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-  }
-  .btn-del:hover { background: rgba(251, 113, 133, 0.15); }
-  td.kb-wrap { white-space: normal; max-width: 280px; }
-</style>
-
-<div class="content-header">
-  <div class="content-title-block">
-    <h1>Knowledge base</h1>
-    <p>Unggah PDF, TXT, atau DOCX untuk RAG di bot (Qdrant + embedding).</p>
+<div class="page-header header-row">
+  <div>
+    <h1>Knowledge Base</h1>
+    <p>Upload PDF, TXT, or DOCX for RAG indexing (Qdrant + embeddings)</p>
   </div>
-  <div class="header-actions">
-    <span class="chip">{{ now }}</span>
+  <div class="header-meta">
+    <span class="meta-item">{{ now }}</span>
   </div>
 </div>
 
@@ -107,59 +20,59 @@
 {% endwith %}
 
 {% if not auth_enabled %}
-<div class="kb-flash error" style="margin-bottom:24px;">
-  <strong>Peringatan:</strong> <code>ADMIN_PASSWORD</code> belum diset — dashboard ini terbuka tanpa autentikasi. Set <code>ADMIN_USERNAME</code> (opsional, default admin) dan <code>ADMIN_PASSWORD</code> di <code>.env</code>.
+<div class="kb-flash error">
+  <strong>Warning:</strong> <span class="mono">ADMIN_PASSWORD</span> is not set — this panel is open without authentication. Set <span class="mono">ADMIN_USERNAME</span> and <span class="mono">ADMIN_PASSWORD</span> in <span class="mono">.env</span>.
 </div>
 {% endif %}
 
 <div class="kb-grid">
-  <article class="card card-accent-indigo delay-1">
-    <div class="card-head">
-      <span class="card-label">Upload</span>
+  <div class="card card-accent-purple d1">
+    <div class="card-top">
+      <span class="card-label">Upload Documents</span>
     </div>
     <form class="kb-form" method="post" action="{{ url_for('admin.knowledge_upload') }}" enctype="multipart/form-data">
       <div class="field">
-        <label for="kb-title">Judul (opsional)</label>
-        <input type="text" id="kb-title" name="title" placeholder="Mis. Kebijakan privasi internal" maxlength="240" />
+        <label for="kb-title">Title (optional)</label>
+        <input type="text" id="kb-title" name="title" placeholder="e.g. Internal privacy policy" maxlength="240" />
       </div>
       <div class="field">
-        <label for="kb-file">File</label>
+        <label for="kb-file">Files</label>
         <input type="file" id="kb-file" name="files" multiple accept=".pdf,.txt,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" required />
       </div>
-      <button type="submit" class="kb-submit">Indeks ke Qdrant</button>
-      <p class="kb-hint">Bisa pilih banyak file sekaligus. Butuh Qdrant berjalan, <code>DATABASE_URL</code>, dan kunci embedding (<code>EMBEDDING_API_KEY</code> atau <code>OPENROUTER_API_KEY</code>).</p>
+      <button type="submit" class="btn-primary">Index into Qdrant</button>
+      <p class="kb-hint">Multiple files supported. Requires Qdrant running, <span class="mono">DATABASE_URL</span>, and embedding keys.</p>
     </form>
-  </article>
+  </div>
 
-  <article class="card table-card delay-2">
-    <div class="card-head">
-      <span class="card-label">Dokumen terindeks</span>
-      <span class="tag tag-info">{{ rows|length }} file</span>
+  <div class="card table-card d2">
+    <div class="table-head">
+      <span class="table-head-label">Indexed Documents</span>
+      <span class="tag tag-blue tag-dot">{{ rows|length }} files</span>
     </div>
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
-            <th>Judul</th>
+            <th>Title</th>
             <th>File</th>
             <th>Chunks</th>
-            <th>Diunggah</th>
+            <th>Uploaded</th>
             <th></th>
           </tr>
         </thead>
         <tbody>
           {% if not rows %}
-          <tr><td colspan="5" style="padding:24px; color: var(--text-tertiary);">Belum ada dokumen.</td></tr>
+          <tr><td colspan="5" style="padding:24px; color: var(--text-muted);">No documents indexed yet.</td></tr>
           {% else %}
           {% for r in rows %}
           <tr>
-            <td class="kb-wrap">{{ r.title }}</td>
-            <td class="mono kb-wrap">{{ r.filename }}</td>
+            <td class="kb-wrap" style="color: var(--text);">{{ r.title }}</td>
+            <td class="mono kb-wrap" style="color: var(--text-dim);">{{ r.filename }}</td>
             <td class="mono">{{ r.chunk_count }}</td>
-            <td class="mono">{{ r.created_at[:19] if r.created_at else "—" }}</td>
+            <td class="mono" style="color: var(--text-muted);">{{ r.created_at[:19] if r.created_at else "—" }}</td>
             <td>
-              <form method="post" action="{{ url_for('admin.knowledge_delete', row_id=r.id) }}" onsubmit="return confirm('Hapus dokumen ini dari Qdrant dan database?');">
-                <button type="submit" class="btn-del">Hapus</button>
+              <form method="post" action="{{ url_for('admin.knowledge_delete', row_id=r.id) }}" onsubmit="return confirm('Delete this document from Qdrant and database?');">
+                <button type="submit" class="btn-danger">Delete</button>
               </form>
             </td>
           </tr>
@@ -168,6 +81,6 @@
         </tbody>
       </table>
     </div>
-  </article>
+  </div>
 </div>
 {% endblock %}

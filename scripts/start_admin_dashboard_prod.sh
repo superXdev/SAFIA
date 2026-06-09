@@ -16,7 +16,7 @@ cd "$ROOT"
 ADMIN_DASHBOARD_BIND="${ADMIN_DASHBOARD_BIND:-0.0.0.0:5454}"
 GUNICORN_WORKERS="${GUNICORN_WORKERS:-2}"
 
-exec uv run --group prod gunicorn \
+exec "$ROOT/.venv/bin/gunicorn" \
   --bind "${ADMIN_DASHBOARD_BIND}" \
   --workers "${GUNICORN_WORKERS}" \
   --access-logfile - \
