@@ -62,7 +62,7 @@ def parse_silver_table(html: str) -> dict[str, Any]:
 
 
 def fetch_silver_price_idr() -> dict[str, Any]:
-    """Fetch silver price from bullion-rates.com (IDR per gram, oz, kilo). Cached in Redis for 6 hours."""
+    """Fetch silver price from bullion-rates.com (IDR per gram, oz, kilo). Cached in memory for 6 hours."""
     cached = get_cached(PRICE_CACHE_KEY_SILVER)
     if cached is not None:
         return cached

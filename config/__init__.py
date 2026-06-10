@@ -47,12 +47,6 @@ LLM_CHAT_API_KEY = LLM_API_KEY or GROQ_API_KEY
 VISION_MODEL = os.environ.get("VISION_MODEL", "mistralai/mistral-small-3.2-24b-instruct")
 
 # -----------------------------------------------------------------------------
-# Redis
-# -----------------------------------------------------------------------------
-REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
-CHAT_KEY_PREFIX = "safia:chat:"
-
-# -----------------------------------------------------------------------------
 # Cache TTLs and keys
 # -----------------------------------------------------------------------------
 # Gold/silver price — 6 hours

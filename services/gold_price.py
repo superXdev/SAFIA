@@ -80,7 +80,7 @@ def fetch_gold_price_idr() -> list[dict[str, Any]]:
     """
     Fetch gold price table from harga-emas.org. Returns list of rows with keys:
     unit (e.g. "Ounce (oz)"), usd, usd_change, idr, idr_change.
-    Cached in Redis for 6 hours.
+    Cached in memory for 6 hours.
     """
     cached = get_cached(PRICE_CACHE_KEY_GOLD)
     if cached is not None:

@@ -11,7 +11,7 @@ from aiogram.types import BotCommand
 
 from config import REMINDER_ENABLED, TELEGRAM_BOT_TOKEN
 from bot.handlers import register_handlers
-from services.chat_history import close_redis
+from services.chat_history import shutdown as shutdown_store
 from services.database import close_db, init_db
 
 logging.basicConfig(level=logging.INFO)
@@ -46,7 +46,7 @@ async def main() -> None:
     finally:
         if reminder_task:
             reminder_task.cancel()
-        await close_redis()
+        await shutdown_store()
         await close_db()
 
 

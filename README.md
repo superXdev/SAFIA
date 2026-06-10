@@ -2,7 +2,7 @@
 
 An AI-powered Telegram bot for personal finance. Chat naturally to track expenses, manage debts, monitor investments, get market data, and search financial news — all in one place.
 
-Runs entirely on your machine: SQLite for data, Qdrant on-disk for document search, ONNX for local embeddings. No cloud dependencies besides the LLM API and Firecrawl.
+Runs entirely on your machine: SQLite for data and caching, Qdrant on-disk for document search, ONNX for local embeddings. No cloud dependencies besides the LLM API and Firecrawl. No Redis required.
 
 ## Features
 
@@ -28,7 +28,7 @@ Runs entirely on your machine: SQLite for data, Qdrant on-disk for document sear
 curl -fsSL https://raw.githubusercontent.com/superXdev/SAFIA/main/install.sh | bash
 ```
 
-The installer handles everything: Git, uv, Python 3.12, Redis (auto-installed if missing), dependencies, and the `safia` CLI command. **No Docker required.**
+The installer handles everything: Git, uv, Python 3.12, dependencies, and the `safia` CLI command. **No Docker required.**
 
 **Windows (PowerShell):**
 
@@ -36,7 +36,7 @@ The installer handles everything: Git, uv, Python 3.12, Redis (auto-installed if
 iex (irm https://raw.githubusercontent.com/superXdev/SAFIA/main/install.ps1)
 ```
 
-The installer checks for Git, Python, uv (auto-installs uv if missing), and Redis. **Redis must be installed separately** — use [Memurai](https://memurai.com/), [WSL](https://learn.microsoft.com/windows/wsl/install), or Docker (`docker run -d -p 6379:6379 --name safia-redis redis:7-alpine`).
+The installer checks for Git, Python, uv (auto-installs uv if missing).
 
 After install:
 
@@ -73,7 +73,7 @@ SAFIA runs entirely on your machine. No cloud dependencies for core features:
 | Embeddings | fastembed + ONNX (384d, multilingual) | **Local** — `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` |
 | Vector storage | Qdrant on-disk | **Local** — `data/qdrant/` |
 | Database | SQLite (default) or PostgreSQL | **Local** |
-| Cache & rate limiting | Redis | **Local** — auto-installed by installer |
+| Cache & rate limiting | In-memory + SQLite | **Local** |
 | Admin UI | Flask + Chart.js | **Local** — `http://127.0.0.1:5454` |
 | Bot daemon | systemd / launchd / Scheduled Tasks | **Local** — auto-start on boot |
 
@@ -99,7 +99,6 @@ TELEGRAM_BOT_TOKEN=your-telegram-bot-token
 LLM_PROVIDER=lunos
 LLM_API_KEY=your-api-key
 DATABASE_URL=sqlite+aiosqlite:///data/safia.db
-REDIS_URL=redis://localhost:6379/0
 ```
 
 **Knowledge base** works out of the box with local defaults — no extra config needed. To customize:
@@ -153,7 +152,7 @@ All other interactions happen through natural conversation — just chat normall
 | Vision | LLM provider (same as chat) |
 | Speech-to-text | Whisper (Groq) |
 | Database | SQLite / PostgreSQL + SQLAlchemy (async) |
-| Cache / rate limit | Redis |
+| Cache / rate limit | In-memory + SQLite |
 | Admin UI | Flask + Chart.js |
 | Embeddings | fastembed (ONNX, local) |
 | Vector DB | Qdrant (on-disk, local) |

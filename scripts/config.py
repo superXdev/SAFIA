@@ -196,10 +196,6 @@ def edit_database(vals: dict) -> None:
     )
 
 
-def edit_redis(vals: dict) -> None:
-    _section("Redis")
-    vals["REDIS_URL"] = _input_text("REDIS_URL:", vals.get("REDIS_URL", "redis://localhost:6379/0"), required=True)
-
 
 def edit_admin(vals: dict) -> None:
     _section("Admin Dashboard")
@@ -255,7 +251,7 @@ def show_config(vals: dict) -> None:
     display_order = [
         "TELEGRAM_BOT_TOKEN", "LLM_PROVIDER", "LLM_API_KEY", "LLM_MODEL",
         "LLM_BASE_URL", "GROQ_API_KEY", "FIRECRAWL_API_KEY",
-        "DATABASE_URL", "REDIS_URL",
+        "DATABASE_URL",
         "ADMIN_USERNAME", "ADMIN_PASSWORD", "FLASK_SECRET_KEY",
         "VISION_MODEL", "REMINDER_ENABLED", "REMINDER_MAX_PER_USER",
         "REMINDER_TICK_SECONDS", "DAILY_MESSAGE_LIMIT",
@@ -285,7 +281,6 @@ MENU_ITEMS = [
     ("Groq Key (voice transcription)", edit_groq_key),
     ("Firecrawl Key (web search)", edit_firecrawl),
     ("Database URL", edit_database),
-    ("Redis URL", edit_redis),
     ("Admin Dashboard", edit_admin),
     ("Advanced settings", edit_advanced),
 ]

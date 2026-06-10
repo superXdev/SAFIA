@@ -126,6 +126,16 @@ class Setting(Base):
         server_default=func.now(),
     )
 
+class KvEntry(Base):
+    """Persistent key-value store backing the in-memory cache (rate limits, chat history, price cache)."""
+
+    __tablename__ = "kv_store"
+
+    key: Mapped[str] = mapped_column(String(256), primary_key=True)
+    value: Mapped[str] = mapped_column(String(32768), default="", nullable=False)
+    expires_at: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+
 class KnowledgeDocument(Base):
     """Metadata for knowledge-base files; vectors live in Qdrant."""
 

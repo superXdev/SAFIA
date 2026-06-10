@@ -1,4 +1,4 @@
-"""Universal currency converter — real-time rates with Redis cache per pair."""
+"""Universal currency converter — real-time rates with in-memory cache per pair."""
 import logging
 
 import requests

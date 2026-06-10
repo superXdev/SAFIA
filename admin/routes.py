@@ -61,7 +61,6 @@ ALL_ENV_VARS: list[tuple[str, str, str, str]] = [
     ("CURRENCY_RATE_URL", "https://api.frankfurter.app/latest", "Exchange rate source URL", "Search & Data"),
     # --- Storage ---
     ("DATABASE_URL", "sqlite+aiosqlite:///data/safia.db", "Database connection string", "Storage"),
-    ("REDIS_URL", "redis://localhost:6379/0", "Redis connection string", "Storage"),
     # --- Vector & Embeddings ---
     ("QDRANT_PATH", "data/qdrant", "Local Qdrant storage directory", "Vector & Embeddings"),
     ("QDRANT_URL", "", "Remote Qdrant URL (leave blank for local)", "Vector & Embeddings"),

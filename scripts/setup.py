@@ -137,8 +137,6 @@ TR = {
         "fetching_models": "Fetching model list...",
         "sqlite_default": "Default: SQLite (zero-config)",
         "env_backup": "Old .env copied to .env.backup",
-        "redis_docker": "Docker: docker run -d -p 6379:6379 --name safia-redis redis:7-alpine",
-        "redis_missing": "Redis not detected. Bot requires Redis.",
         "model_fetch_fail": "Failed to fetch models. Enter manually.",
         "provider_chosen": "Provider: {provider}",
         "models_found": "Found {count} models.",
@@ -156,8 +154,6 @@ TR = {
         "firecrawl_key": "Firecrawl API Key (optional):",
         "custom_base_url": "Custom Base URL (OpenAI-compatible):",
         "database_url": "DATABASE_URL:",
-        "redis_url": "REDIS_URL:",
-        "press_enter_redis": "Press Enter when Redis is ready...",
         "enable_admin": "Enable admin dashboard?",
         "admin_username": "Admin username:",
         "admin_password": "Admin password (blank = random):",
@@ -197,8 +193,6 @@ TR = {
         "fetching_models": "Mengambil daftar model...",
         "sqlite_default": "Default: SQLite (zero-config)",
         "env_backup": ".env lama dicopy ke .env.backup",
-        "redis_docker": "Docker: docker run -d -p 6379:6379 --name safia-redis redis:7-alpine",
-        "redis_missing": "Redis tidak terdeteksi. Bot wajib Redis.",
         "model_fetch_fail": "Gagal fetch model. Masukkan manual.",
         "provider_chosen": "Provider: {provider}",
         "models_found": "Ditemukan {count} model.",
@@ -216,8 +210,6 @@ TR = {
         "firecrawl_key": "Firecrawl API Key (opsional):",
         "custom_base_url": "Base URL Custom (harus OpenAI-compatible):",
         "database_url": "DATABASE_URL:",
-        "redis_url": "REDIS_URL:",
-        "press_enter_redis": "Tekan Enter setelah Redis siap...",
         "enable_admin": "Aktifkan admin dashboard?",
         "admin_username": "Username admin:",
         "admin_password": "Password admin (kosongkan = random):",
@@ -282,20 +274,6 @@ def check_uv() -> None:
         console.print(f"[red]{t('uv_not_found')} https://docs.astral.sh/uv/getting-started/installation/[/red]")
         sys.exit(1)
 
-
-def check_redis() -> None:
-    import socket
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.settimeout(1)
-    result = s.connect_ex(("localhost", 6379))
-    s.close()
-    if result != 0:
-        _warn(t("redis_missing"))
-        _info(t("redis_docker"))
-        questionary.text(
-            t("press_enter_redis"),
-            style=QS_STYLE,
-        ).unsafe_ask()
 
 
 # ── Sections ──────────────────────────────────────────────────────────────────
@@ -436,16 +414,6 @@ def configure_database() -> str:
     return val.strip() if val.strip() else default
 
 
-def configure_redis() -> str:
-    default = "redis://localhost:6379/0"
-    val = questionary.text(
-        t("redis_url"),
-        default=default,
-        style=QS_STYLE,
-    ).unsafe_ask()
-    if val is None:
-        raise KeyboardInterrupt
-    return val.strip() if val.strip() else default
 
 
 def configure_admin() -> tuple[str, str, str]:
@@ -494,7 +462,6 @@ def write_env(
     firecrawl_key: str,
     custom_base_url: str,
     database_url: str,
-    redis_url: str,
     admin_user: str,
     admin_pass: str,
     flask_secret: str,
@@ -533,7 +500,6 @@ def write_env(
         f"",
         t("env_database"),
         f"DATABASE_URL={database_url}",
-        f"REDIS_URL={redis_url}",
         f"",
         t("env_admin"),
         f"ADMIN_USERNAME={admin_user}",
@@ -574,8 +540,6 @@ def main() -> None:
         with console.status(f"[bold bright_blue]{t('uv_sync')}[/bold bright_blue]"):
             os.system("uv sync")
 
-    check_redis()
-
     # Telegram Bot
     telegram_token = configure_telegram()
 
@@ -605,7 +569,6 @@ def main() -> None:
 
     # Database
     database_url = configure_database()
-    redis_url = configure_redis()
 
     # Admin
     admin_user, admin_pass, flask_secret = configure_admin()
@@ -622,7 +585,6 @@ def main() -> None:
         firecrawl_key,
         custom_base_url,
         database_url,
-        redis_url,
         admin_user,
         admin_pass,
         flask_secret,

@@ -35,8 +35,8 @@ uv run pytest tests/ -v
 
 ## Runtime prerequisites
 
-- **Redis** — **required**. Used for chat history storage and rate limiting. The bot will fail at startup without a running Redis instance.
 - **SQLite** (default, zero-config) or **PostgreSQL** — database is auto-created at startup via `init_db()`. Defaults to `data/safia.db`; set `DATABASE_URL` to use PostgreSQL instead.
+- Chat history and rate limiting use an in-memory + SQLite write-through store. No Redis required.
 - **Qdrant** — optional. Only needed for the knowledge base (RAG) feature.
 - `.env` file — **required**. Must exist before running. `main.py` and `admin_dashboard.py` both call `load_dotenv()` as their first action.
 
@@ -52,7 +52,8 @@ services/llm.py      → Chat completions (provider-agnostic via LLM_PROVIDER), 
 services/tools/      → LLM function-calling tool definitions and handlers (11 modules)
 services/database.py → async SQLAlchemy helpers (CRUD for users, records, debts, assets, metrics, KB)
 services/models.py   → SQLAlchemy ORM models (declarative, all in one file)
-services/chat_history.py → Redis-backed history + rate limiting (25 msg/user/day, UTC midnight reset)
+services/chat_history.py → In-memory + SQLite history + rate limiting (1000 msg/user/day, UTC midnight reset)
+services/memory_store.py → hybrid in-memory + SQLite key-value store (replaces Redis)
 services/reminder_runner.py → background asyncio task (runs in bot process, polls REMINDER_TICK_SECONDS)
 services/schedule.py → computes next run from daily/weekly/monthly/interval schedule JSON
 services/knowledge/  → Qdrant vector ingest/search, word-based chunking
@@ -96,7 +97,7 @@ Model selection: `LLM_MODEL` (default `openai/gpt-oss-120b`).
 
 ### All env vars
 
-Critical: `TELEGRAM_BOT_TOKEN`, `LLM_API_KEY`, `DATABASE_URL`, `REDIS_URL`.
+Critical: `TELEGRAM_BOT_TOKEN`, `LLM_API_KEY`, `DATABASE_URL`.
 Optional for voice: `GROQ_API_KEY`.
 Optional for photos: `VISION_MODEL` (default `mistralai/mistral-small-3.2-24b-instruct`).
 Optional for admin: `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `FLASK_SECRET_KEY`.
@@ -105,7 +106,7 @@ Reminder tuning: `REMINDER_ENABLED`, `REMINDER_MAX_PER_USER`, `REMINDER_MAX_SEND
 
 ## Rate limiting
 
-25 messages per user per day. Counted in Redis (`safia:rate:{user_id}:{date}`), expires at UTC midnight. The handler rejects before processing; the `check_and_increment_rate_limit` call counts the message regardless.
+1000 messages per user per day. Counted in memory + SQLite (`safia:rate:{user_id}:{date}`), resets at UTC midnight. The handler rejects before processing; the `check_and_increment_rate_limit` call counts the message regardless.
 
 ## Reminders
 
@@ -119,5 +120,5 @@ Reminder tuning: `REMINDER_ENABLED`, `REMINDER_MAX_PER_USER`, `REMINDER_MAX_SEND
 
 - Chunks are word-based (default 450 words, 70 word overlap), not character/token-based.
 - Only `.pdf`, `.txt`, `.docx` accepted. Max upload 200 MB (configurable).
-- Vector storage in Qdrant; metadata in PostgreSQL (`kb_documents` table).
-- Deleting a document requires removing both the Qdrant vectors and PostgreSQL metadata row.
+- Vector storage in Qdrant; metadata in database (`kb_documents` table).
+- Deleting a document requires removing both the Qdrant vectors and database metadata row.
