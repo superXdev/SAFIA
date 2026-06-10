@@ -1,7 +1,18 @@
 """App configuration from env and constants."""
 import os
+from pathlib import Path
 
 from config.prompt import SYSTEM_PROMPT
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+
+def _resolve_path(raw: str) -> str:
+    """If *raw* is a relative path, resolve it against PROJECT_ROOT."""
+    p = Path(raw)
+    if p.is_absolute():
+        return raw
+    return str(PROJECT_ROOT / p)
 
 # -----------------------------------------------------------------------------
 # Bot
@@ -86,12 +97,28 @@ RATE_LIMIT_KEY_PREFIX = "safia:rate:"
 # -----------------------------------------------------------------------------
 # Database — defaults to SQLite at data/safia.db (zero-config).
 # For PostgreSQL: postgresql+asyncpg://user:pass@host:5432/safia
-DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite+aiosqlite:///data/safia.db")
+def _resolve_db_url(raw: str) -> str:
+    """If raw is a SQLite URL with a relative path, resolve it against PROJECT_ROOT."""
+    if not raw.startswith("sqlite"):
+        return raw
+    prefix = "sqlite+aiosqlite:///"
+    suffix = "sqlite:///"
+    if raw.startswith(prefix):
+        path = raw[len(prefix):]
+        resolved = _resolve_path(path)
+        return prefix + resolved
+    elif raw.startswith(suffix):
+        path = raw[len(suffix):]
+        resolved = _resolve_path(path)
+        return suffix + resolved
+    return raw
+
+DATABASE_URL = _resolve_db_url(os.environ.get("DATABASE_URL", "sqlite+aiosqlite:///data/safia.db"))
 
 # -----------------------------------------------------------------------------
 # Qdrant (knowledge base vectors) — local file storage by default
 # -----------------------------------------------------------------------------
-QDRANT_PATH = os.environ.get("QDRANT_PATH", "data/qdrant")
+QDRANT_PATH = _resolve_path(os.environ.get("QDRANT_PATH", "data/qdrant"))
 QDRANT_URL = os.environ.get("QDRANT_URL", "")
 QDRANT_API_KEY = os.environ.get("QDRANT_API_KEY", "") or None
 KB_COLLECTION_NAME = os.environ.get("KB_COLLECTION_NAME", "safia_kb")
@@ -111,6 +138,14 @@ EMBEDDING_API_KEY = os.environ.get("EMBEDDING_API_KEY", "") or os.environ.get("L
 EMBEDDING_MODEL = os.environ.get("EMBEDDING_MODEL", "openai/text-embedding-3-small")
 EMBEDDING_VECTOR_SIZE = int(os.environ.get("EMBEDDING_VECTOR_SIZE", "384"))
 
+# Persistent cache for local embedding models (fastembed downloads ONNX models from HF).
+# Defaults to data/embedding_cache inside the project root so it survives across restarts
+# on any OS — including Windows where the default ~/.cache/huggingface may get cleaned.
+EMBEDDING_CACHE_DIR = _resolve_path(
+    os.environ.get("EMBEDDING_CACHE_DIR", "data/embedding_cache")
+)
+os.environ.setdefault("HF_HOME", EMBEDDING_CACHE_DIR)
+
 # -----------------------------------------------------------------------------
 # External API endpoints
 # -----------------------------------------------------------------------------
@@ -128,7 +163,7 @@ CURRENCY_RATE_URL = os.environ.get("CURRENCY_RATE_URL", "https://api.frankfurter
 # Knowledge chunks are word-based (split on whitespace), not characters.
 KB_CHUNK_WORDS = int(os.environ.get("KB_CHUNK_WORDS", "450"))
 KB_CHUNK_OVERLAP_WORDS = int(os.environ.get("KB_CHUNK_OVERLAP_WORDS", "70"))
-KB_UPLOAD_DIR = os.environ.get("KB_UPLOAD_DIR", "data/kb_uploads")
+KB_UPLOAD_DIR = _resolve_path(os.environ.get("KB_UPLOAD_DIR", "data/kb_uploads"))
 KB_MAX_UPLOAD_MB = int(os.environ.get("KB_MAX_UPLOAD_MB", "200"))
 KB_EMBED_BATCH_SIZE = int(os.environ.get("KB_EMBED_BATCH_SIZE", "32"))
 
