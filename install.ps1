@@ -119,10 +119,10 @@ if (Test-Path $InstallDir) {
             Write-Step "Switching to branch $Branch..."
             git fetch origin
             git checkout $Branch
-            git pull origin $Branch
+            git pull --ff-only origin $Branch
         } else {
             Write-Step "Pulling latest changes on $Branch..."
-            git pull origin $Branch
+            git pull --ff-only origin $Branch
         }
         Pop-Location
     } catch {
@@ -131,7 +131,7 @@ if (Test-Path $InstallDir) {
     }
 } else {
     New-Item -ItemType Directory -Force -Path (Split-Path $InstallDir -Parent) | Out-Null
-    git clone --branch $Branch $REPO_URL $InstallDir
+    git clone --depth 1 --branch $Branch $REPO_URL $InstallDir
     Write-OK "Cloned to $InstallDir"
 }
 
@@ -255,7 +255,11 @@ function Update-Safia {
     Push-Location $INSTALL_DIR
     git pull --ff-only origin main
     Write-Host "Updating dependencies..." -ForegroundColor Cyan
-    & uv sync
+    if (Get-Command uv -ErrorAction SilentlyContinue) {
+        & uv sync
+    } else {
+        & "$INSTALL_DIR\.venv\Scripts\python.exe" -m uv sync
+    }
     Pop-Location
     Write-Host "Update complete. Restart with 'safia restart'." -ForegroundColor Green
 }

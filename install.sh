@@ -763,7 +763,18 @@ case "${1:-}" in
         git fetch origin main
         git checkout main
         git pull --ff-only origin main
-        "$SAFIA_HOME/bin/uv" sync
+
+        if [ -x "$SAFIA_HOME/bin/uv" ]; then
+            _uv="$SAFIA_HOME/bin/uv"
+        elif command -v uv >/dev/null 2>&1; then
+            _uv="$(command -v uv)"
+        elif [ -x "$INSTALL_DIR/.venv/bin/python" ]; then
+            _uv="$INSTALL_DIR/.venv/bin/python -m uv"
+        else
+            echo "✗ uv not found. Install it: https://docs.astral.sh/uv/getting-started/installation/"
+            exit 1
+        fi
+        $_uv sync
         safia_restart
         echo "✓ SAFIA updated and restarted."
         ;;
