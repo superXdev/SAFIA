@@ -36,6 +36,7 @@ from services.db_settings import (
     set_access_mode,
 )
 from services.knowledge.ingest import delete_kb_document, ingest_bytes
+from services.knowledge.qdrant_kb import close_qdrant
 
 bp = Blueprint("admin", __name__)
 
@@ -155,12 +156,12 @@ _AUTH_BAN_WINDOW = 300  # 5 minutes
 def _csrf_protect() -> Response | None:
     if request.method not in ("POST",):
         return None
-    target = request.url
+    target_origin = request.host_url.rstrip("/")
     origin = request.headers.get("Origin") or ""
     referer = request.headers.get("Referer") or ""
-    if origin and not origin.startswith(target):
+    if origin and origin != target_origin:
         return Response("CSRF check failed", 403)
-    if referer and not referer.startswith(target):
+    if referer and not referer.startswith(target_origin):
         return Response("CSRF check failed", 403)
     return None
 
@@ -453,6 +454,7 @@ def knowledge_upload():
     else:
         flash("Upload gagal. Tidak ada file yang berhasil diindeks.", "error")
 
+    _loop.run_until_complete(close_qdrant())
     return redirect(url_for("admin.knowledge"))
 
 
@@ -465,5 +467,6 @@ def knowledge_delete(row_id: int):
     doc_id = row.document_id
     _loop.run_until_complete(delete_kb_document(doc_id))
     _loop.run_until_complete(kb_delete_row(row_id))
+    _loop.run_until_complete(close_qdrant())
     flash("Dokumen dihapus dari basis pengetahuan.", "success")
     return redirect(url_for("admin.knowledge"))

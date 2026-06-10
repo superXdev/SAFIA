@@ -40,6 +40,17 @@ def get_qdrant() -> AsyncQdrantClient:
     return _client
 
 
+async def close_qdrant() -> None:
+    global _client
+    if _client is not None:
+        try:
+            await _client.close()
+        except Exception:
+            pass
+        finally:
+            _client = None
+
+
 async def ensure_collection() -> None:
     client = get_qdrant()
     name = KB_COLLECTION_NAME
