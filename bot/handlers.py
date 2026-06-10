@@ -22,7 +22,7 @@ from services.chat_history import (
 from services.database import get_or_create_user
 from services.db_settings import is_user_allowed
 from services.document_vision import extract_document_text, parse_final_amount
-from config import LLM_CHAT_API_KEY
+from config import LLM_CHAT_API_KEY, LLM_PROVIDER
 
 
 async def _check_access(user_id: int) -> bool:
@@ -195,8 +195,15 @@ async def handle_photo(message: Message) -> None:
 
     if not LLM_CHAT_API_KEY:
         await message.answer(
-            "Document photo scanning is not enabled. Contact admin.",
-            parse_mode=ParseMode.MARKDOWN,
+            "Pemindaian dokumen belum diaktifkan karena API key belum dikonfigurasi. "
+            "Hubungi admin untuk mengaktifkan fitur ini."
+        )
+        return
+
+    if LLM_PROVIDER != "lunos":
+        await message.answer(
+            "Pemindaian dokumen hanya tersedia dengan provider Lunos. "
+            "Gunakan API key Lunos (LLM_PROVIDER=lunos) untuk mengaktifkan fitur ini."
         )
         return
 
@@ -223,6 +230,13 @@ async def handle_photo(message: Message) -> None:
         extracted = await extract_document_text(tmp_path)
     finally:
         tmp_path.unlink(missing_ok=True)
+
+    if extracted == "__AUTH_ERROR__":
+        await typing.edit_text(
+            "Pemindaian dokumen gagal: API key tidak valid atau tidak memiliki akses ke vision model. "
+            "Hubungi admin untuk memeriksa konfigurasi."
+        )
+        return
 
     if not extracted or extracted.lower().startswith("not a document"):
         await typing.edit_text(

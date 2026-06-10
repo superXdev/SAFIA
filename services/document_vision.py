@@ -68,7 +68,7 @@ async def extract_document_text(image_path: Path) -> str:
     """
     client = _get_vision_client()
     if not client:
-        return ""
+        raise RuntimeError("Vision client not configured — API key is missing")
 
     try:
         base64_url = _encode_image_to_base64(image_path)
@@ -93,7 +93,12 @@ async def extract_document_text(image_path: Path) -> str:
         )
         text = (response.choices[0].message.content or "").strip()
         return text
-    except Exception:
+    except RuntimeError:
+        raise
+    except Exception as e:
+        error_msg = str(e).lower()
+        if "auth" in error_msg or "api.key" in error_msg or "401" in error_msg or "403" in error_msg:
+            return "__AUTH_ERROR__"
         logging.exception("Document vision extraction failed")
         return ""
 

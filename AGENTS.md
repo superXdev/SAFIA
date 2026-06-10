@@ -93,7 +93,7 @@ Backward compat: if only `GROQ_API_KEY` is set (no `LLM_PROVIDER`), the system a
 Model selection: `LLM_MODEL` (default `openai/gpt-oss-120b`).
 
 **Whisper transcription** always uses Groq (`GROQ_API_KEY`). Without it, voice messages are disabled.
-**Document vision** uses the same provider as chat (`LLM_CHAT_API_KEY`). Without an API key, photo scanning is disabled.
+**Document vision** uses the Lunos provider (`LLM_PROVIDER=lunos`) with `LLM_API_KEY`. Without a Lunos API key, photo scanning is disabled.
 
 ### All env vars
 

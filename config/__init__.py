@@ -42,7 +42,7 @@ LLM_CHAT_API_KEY = LLM_API_KEY or GROQ_API_KEY
 
 # -----------------------------------------------------------------------------
 # Document vision — optional, for photo/document extraction.
-# Uses the same LLM provider as chat (LLM_CHAT_BASE_URL + LLM_CHAT_API_KEY).
+# Requires Lunos provider (LLM_PROVIDER=lunos) with a valid LLM_API_KEY.
 # -----------------------------------------------------------------------------
 VISION_MODEL = os.environ.get("VISION_MODEL", "mistralai/mistral-small-3.2-24b-instruct")
 
