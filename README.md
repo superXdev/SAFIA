@@ -1,3 +1,13 @@
+<p align="center">
+  <img src="SAFIA.png" alt="SAFIA" width="200">
+</p>
+
+<p align="center">
+  <a href="https://www.gnu.org/licenses/agpl-3.0.en.html"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue" alt="License: AGPL-3.0"></a>
+  <a href="https://safia.maximusolution.com"><img src="https://img.shields.io/badge/docs-safia.maximusolution.com-green" alt="Docs"></a>
+  <a href="https://t.me/FRDBlock"><img src="https://img.shields.io/badge/Telegram-FRDBlock-blue?logo=telegram" alt="Telegram: FRDBlock"></a>
+</p>
+
 # SAFIA
 
 An AI-powered Telegram bot for personal finance. Chat naturally to track expenses, manage debts, monitor investments, get market data, and search financial news — all in one place.
