@@ -9,7 +9,9 @@ from aiogram import F, Dispatcher
 from aiogram.filters import Command
 from aiogram.types import Message
 from aiogram.enums import ParseMode
+from aiogram.exceptions import TelegramBadRequest
 
+from bot.message_helpers import safe_edit, safe_reply
 from services.llm import chat as llm_chat, transcribe
 from services.chat_history import (
     check_and_increment_rate_limit,
@@ -136,7 +138,7 @@ async def handle_message(message: Message) -> None:
     )
     history.append({"role": "assistant", "content": reply})
     await save_history(message.chat.id, history)
-    await thinking.edit_text(reply, parse_mode=ParseMode.MARKDOWN)
+    await safe_edit(thinking, reply)
 
 
 async def handle_voice(message: Message) -> None:
@@ -183,7 +185,7 @@ async def handle_voice(message: Message) -> None:
     history.append({"role": "assistant", "content": reply})
     await save_history(message.chat.id, history)
 
-    await typing.edit_text(reply, parse_mode=ParseMode.MARKDOWN)
+    await safe_edit(typing, reply)
 
 
 async def handle_photo(message: Message) -> None:
@@ -248,7 +250,7 @@ async def handle_photo(message: Message) -> None:
     history.append({"role": "assistant", "content": reply})
     await save_history(message.chat.id, history)
 
-    await typing.edit_text(reply, parse_mode=ParseMode.MARKDOWN)
+    await safe_edit(typing, reply)
 
 
 def register_handlers(dp: Dispatcher) -> None:

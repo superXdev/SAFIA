@@ -7,9 +7,7 @@ import logging
 from datetime import date, timezone
 from typing import TYPE_CHECKING
 
-from aiogram.enums import ParseMode
-from aiogram.exceptions import TelegramBadRequest
-
+from bot.message_helpers import safe_send
 from config import REMINDER_MAX_SENDS_PER_DAY, REMINDER_TICK_SECONDS
 from services.llm import polish_reminder_message
 from services.memory_store import aincr
@@ -151,16 +149,10 @@ async def _process_due_reminders(bot: Bot) -> None:
                     title=reminder.title or "",
                 )
                 try:
-                    await bot.send_message(
-                        chat_id=reminder.user_id,
-                        text=message,
-                        parse_mode=ParseMode.MARKDOWN,
-                    )
-                except TelegramBadRequest:
-                    await bot.send_message(
-                        chat_id=reminder.user_id,
-                        text=message,
-                    )
+                    await safe_send(bot, chat_id=reminder.user_id, text=message)
+                except Exception:
+                    logging.exception("Reminder %d send failed", reminder.id)
+                    continue
             next_run = compute_next_run(reminder.schedule, reminder.timezone)
             await mark_reminder_fired(reminder.id, next_run)
         except Exception:
