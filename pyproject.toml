@@ -23,6 +23,7 @@ dependencies = [
     "pydantic-core>=2.44.0",
     "fastembed>=0.8.0",
     "firecrawl-py>=4.28.2",
+    "telegramify-markdown>=1.1.5",
 ]
 
 [dependency-groups]
