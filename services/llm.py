@@ -332,7 +332,19 @@ async def chat(
         logging.error("LLM connection error: %s", e)
         return "I can't reach the AI service right now. Please check your network or try again later."
     except BadRequestError as e:
-        logging.error("LLM bad request: %s", e)
+        error_msg = str(e)
+        logging.error("LLM bad request: %s", error_msg)
+        if "tool" in error_msg.lower() and "not in" in error_msg.lower():
+            logging.info("Retrying request without tools due to hallucinated tool call")
+            try:
+                resp = await client.chat.completions.create(
+                    model=MODEL,
+                    messages=current,
+                    tool_choice="none",
+                )
+                return resp.choices[0].message.content or "..."
+            except Exception:
+                logging.exception("Retry without tools also failed")
         return "Something went wrong with the request format. The admin may need to adjust settings."
     except Exception:
         logging.exception("LLM unexpected error")
