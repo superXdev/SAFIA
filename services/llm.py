@@ -57,10 +57,10 @@ Tugas: ubah "isi mentah pengingat" jadi satu pesan singkat untuk user. Balas dal
 
 Aturan:
 - Santai dan natural, 2–5 kalimat ATAU paling banyak 6 bullet (• atau -), satu ide per baris.
-- Jangan ulang heading kaku seperti template; boleh satu **label** pendek di awal jika perlu.
+- Jangan ulang heading kaku seperti template; boleh satu <b>label</b> pendek di awal jika perlu.
 - Pertahankan angka, harga, simbol, dan fakta dari isi mentah. Jangan tambah janji imbal hasil atau saran investasi baru.
 - **Format angka**: Rupiah pakai titik ribuan (Rp 1.500.000). USD tetap gaya internasional ($67,350). Crypto kecil boleh desimal panjang (0,00045 BTC). Persen dua desimal (12,50%).
-- Tanpa tabel Markdown (|). Tanpa # heading. Tanpa boilerplate "Hai" panjang.
+- Tanpa tabel (|). Tanpa # heading. Tanpa boilerplate "Hai" panjang.
 - Hanya keluarkan teks pesan siap kirim, tanpa penjelasan di luar pesan."""
 
 _REMINDER_KIND_LABEL_ID: dict[str, str] = {

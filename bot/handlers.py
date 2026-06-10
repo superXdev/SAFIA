@@ -36,9 +36,9 @@ async def _reject_unauthorized(message: Message) -> None:
     uid = message.from_user.id if message.from_user else "unknown"
     await message.answer(
         "Access denied — you are not authorized to use this bot.\n\n"
-        f"Your Telegram ID: `{uid}`\n\n"
+        f"Your Telegram ID: <code>{uid}</code>\n\n"
         "Share this ID with the bot owner to request access.",
-        parse_mode=ParseMode.MARKDOWN,
+        parse_mode=ParseMode.HTML,
     )
 
 
@@ -54,7 +54,7 @@ def _build_status_updater(progress_message: Message) -> Callable[[str], Awaitabl
         if now - last_at < 0.6:
             return
         try:
-            await progress_message.edit_text(text, parse_mode=ParseMode.MARKDOWN)
+            await progress_message.edit_text(text, parse_mode=ParseMode.HTML)
             last_text = text
             last_at = now
         except Exception:
@@ -83,34 +83,34 @@ async def handle_start(message: Message) -> None:
     name_part = f" {first_name}" if first_name else ""
 
     text = (
-        f"Hi{name_part}! I'm *SAFIA*, your personal finance chat companion.\n\n"
-        "*What can I do?*\n"
-        "- Track income, expenses, and investments (stocks, gold, crypto, etc.)\n"
-        "- Check *prices* or *exchange rates* (e.g. gold today, Bitcoin, USD to IDR)\n"
-        "- Help with *debt*, savings, financial news, education, and *reminders*\n\n"
-        "*How to use?* Send text, voice, or a clear photo of a receipt/payslip.\n\n"
+        f"Hi{name_part}! I'm <b>SAFIA</b>, your personal finance chat companion.\n\n"
+        "<b>What can I do?</b>\n"
+        "• Track income, expenses, and investments (stocks, gold, crypto, etc.)\n"
+        "• Check <b>prices</b> or <b>exchange rates</b> (e.g. gold today, Bitcoin, USD to IDR)\n"
+        "• Help with <b>debt</b>, savings, financial news, education, and <b>reminders</b>\n\n"
+        "<b>How to use?</b> Send text, voice, or a clear photo of a receipt/payslip.\n\n"
         "/start = restart conversation\n"
-        "/help = quick info & limits\n\n"
+        "/help = quick info &amp; limits\n\n"
         "Got questions? Just send a message 🙂"
     )
 
-    await message.answer(text, parse_mode=ParseMode.MARKDOWN)
+    await message.answer(text, parse_mode=ParseMode.HTML)
 
 
 async def handle_help(message: Message) -> None:
     text = (
-        "*SAFIA Help*\n\n"
-        "*Commands*\n"
+        "<b>SAFIA Help</b>\n\n"
+        "<b>Commands</b>\n"
         "/start — restart conversation\n"
         "/help — this message\n\n"
-        "*Send*\n"
-        "- *Text* — ask about money, investments, prices, exchange rates, etc.\n"
-        "- *Voice* — transcribed to text, then answered like a regular chat\n"
-        "- *Photo* — clear receipt or payslip (I'll read the contents)\n\n"
-        "*Limit:* max *1000 messages per day* per account (resets daily).\n\n"
-        "*Tip:* write amounts and dates clearly for accurate records."
+        "<b>Send</b>\n"
+        "• <b>Text</b> — ask about money, investments, prices, exchange rates, etc.\n"
+        "• <b>Voice</b> — transcribed to text, then answered like a regular chat\n"
+        "• <b>Photo</b> — clear receipt or payslip (I'll read the contents)\n\n"
+        "<b>Limit:</b> max <b>1000 messages per day</b> per account (resets daily).\n\n"
+        "<b>Tip:</b> write amounts and dates clearly for accurate records."
     )
-    await message.answer(text, parse_mode=ParseMode.MARKDOWN)
+    await message.answer(text, parse_mode=ParseMode.HTML)
 
 
 async def handle_message(message: Message) -> None:
@@ -123,14 +123,14 @@ async def handle_message(message: Message) -> None:
         await message.answer(
             "You've reached the daily limit of 1000 messages.\n"
             "Please try again tomorrow, or reset the conversation if needed.",
-            parse_mode=ParseMode.MARKDOWN,
+            parse_mode=ParseMode.HTML,
         )
         return
 
     history = await get_history(message.chat.id)
     history.append({"role": "user", "content": message.text or ""})
 
-    thinking = await message.answer("Thinking...", parse_mode=ParseMode.MARKDOWN)
+    thinking = await message.answer("Thinking...", parse_mode=ParseMode.HTML)
     reply = await llm_chat(
         history,
         message.from_user.id,
@@ -150,11 +150,11 @@ async def handle_voice(message: Message) -> None:
         await message.answer(
             "You've reached the daily limit of 1000 messages.\n"
             "Please try again tomorrow, or reset the conversation if needed.",
-            parse_mode=ParseMode.MARKDOWN,
+            parse_mode=ParseMode.HTML,
         )
         return
 
-    typing = await message.answer("Listening...", parse_mode=ParseMode.MARKDOWN)
+    typing = await message.answer("Listening...", parse_mode=ParseMode.HTML)
 
     file = await message.bot.get_file(message.voice.file_id)
     with tempfile.NamedTemporaryFile(suffix=".ogg", delete=False) as tmp:
@@ -169,14 +169,14 @@ async def handle_voice(message: Message) -> None:
     if not text:
         await typing.edit_text(
             "Sorry, I couldn't understand the audio. Please try again.",
-            parse_mode=ParseMode.MARKDOWN,
+            parse_mode=ParseMode.HTML,
         )
         return
 
     history = await get_history(message.chat.id)
     history.append({"role": "user", "content": text})
 
-    await typing.edit_text("Thinking...", parse_mode=ParseMode.MARKDOWN)
+    await typing.edit_text("Thinking...", parse_mode=ParseMode.HTML)
     reply = await llm_chat(
         history,
         message.from_user.id,
@@ -196,7 +196,7 @@ async def handle_photo(message: Message) -> None:
     if not LLM_CHAT_API_KEY:
         await message.answer(
             "Document photo scanning is not enabled. Contact admin.",
-            parse_mode=ParseMode.MARKDOWN,
+            parse_mode=ParseMode.HTML,
         )
         return
 
@@ -205,11 +205,11 @@ async def handle_photo(message: Message) -> None:
         await message.answer(
             "You've reached the daily limit of 1000 messages.\n"
             "Please try again tomorrow, or reset the conversation if needed.",
-            parse_mode=ParseMode.MARKDOWN,
+            parse_mode=ParseMode.HTML,
         )
         return
 
-    typing = await message.answer("Scanning document...", parse_mode=ParseMode.MARKDOWN)
+    typing = await message.answer("Scanning document...", parse_mode=ParseMode.HTML)
 
     # Telegram sends multiple sizes; use the largest
     photo = message.photo[-1]
@@ -227,7 +227,7 @@ async def handle_photo(message: Message) -> None:
     if not extracted or extracted.lower().startswith("not a document"):
         await typing.edit_text(
             "Couldn't read a document from this photo. Send a clear photo of an invoice, payslip, or receipt.",
-            parse_mode=ParseMode.MARKDOWN,
+            parse_mode=ParseMode.HTML,
         )
         return
 
@@ -241,7 +241,7 @@ async def handle_photo(message: Message) -> None:
     history = await get_history(message.chat.id)
     history.append({"role": "user", "content": user_context})
 
-    await typing.edit_text("Thinking...", parse_mode=ParseMode.MARKDOWN)
+    await typing.edit_text("Thinking...", parse_mode=ParseMode.HTML)
     reply = await llm_chat(
         history,
         message.from_user.id if message.from_user else 0,
