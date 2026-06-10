@@ -4,11 +4,16 @@ from typing import Any
 
 from services.database import delete_all_debts, delete_debts, get_debts, save_debt, settle_debt
 
+MAX_PERSON_LEN = 200
+MAX_DESC_LEN = 500
+
 async def handle_debt_record(arguments: dict[str, Any], user_id: int) -> str:
     direction = arguments["direction"]
-    person = arguments["person"].strip()
+    person = arguments["person"].strip()[:MAX_PERSON_LEN]
     amount = float(arguments.get("amount", 0))
-    description = (arguments.get("description") or "").strip()
+    if amount <= 0:
+        return json.dumps({"tool": "debt_record", "error": "amount must be positive"}, ensure_ascii=False)
+    description = (arguments.get("description") or "").strip()[:MAX_DESC_LEN]
     await save_debt(user_id, direction, person, amount, description)
     payload = {
         "direction": direction,

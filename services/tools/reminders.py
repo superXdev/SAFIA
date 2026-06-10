@@ -15,10 +15,12 @@ from services.schedule import compute_next_run
 
 def _build_schedule_json(arguments: dict[str, Any]) -> str:
     schedule_type = arguments.get("schedule_type", "daily")
+    hour = int(arguments.get("hour", 8))
+    minute = int(arguments.get("minute", 0))
     schedule: dict[str, Any] = {
         "type": schedule_type,
-        "hour": int(arguments.get("hour", 8)),
-        "minute": int(arguments.get("minute", 0)),
+        "hour": max(0, min(23, hour)),
+        "minute": max(0, min(59, minute)),
     }
     if schedule_type == "weekly":
         schedule["day"] = (arguments.get("day") or "monday").strip().lower()

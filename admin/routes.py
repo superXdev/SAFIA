@@ -2,6 +2,8 @@
 import asyncio
 import os
 import re
+import secrets
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -144,6 +146,24 @@ def init_admin_db() -> None:
 
 ALLOWED_KB_SUFFIXES = {".pdf", ".txt", ".docx"}
 
+_AUTH_FAILURES: dict[str, tuple[int, float]] = {}  # ip -> (count, first_failure_ts)
+_AUTH_MAX_FAILURES = 10
+_AUTH_BAN_WINDOW = 300  # 5 minutes
+
+
+@bp.before_request
+def _csrf_protect() -> Response | None:
+    if request.method not in ("POST",):
+        return None
+    target = request.url
+    origin = request.headers.get("Origin") or ""
+    referer = request.headers.get("Referer") or ""
+    if origin and not origin.startswith(target):
+        return Response("CSRF check failed", 403)
+    if referer and not referer.startswith(target):
+        return Response("CSRF check failed", 403)
+    return None
+
 
 @bp.before_request
 def _require_basic_auth() -> Response | None:
@@ -151,12 +171,18 @@ def _require_basic_auth() -> Response | None:
         return None
     auth = request.authorization
     expected_user = ADMIN_USERNAME or "admin"
-    if (
-        auth
-        and auth.username == expected_user
-        and auth.password == ADMIN_PASSWORD
-    ):
+
+    if auth and auth.username == expected_user and secrets.compare_digest(auth.password or "", ADMIN_PASSWORD):
+        _AUTH_FAILURES.pop(request.remote_addr or "", None)
         return None
+
+    ip = request.remote_addr or "unknown"
+    now_ts = time.time()
+    count, first_ts = _AUTH_FAILURES.get(ip, (0, now_ts))
+    if count >= _AUTH_MAX_FAILURES and (now_ts - first_ts) < _AUTH_BAN_WINDOW:
+        return Response("Too many login attempts. Try again later.", 429)
+    _AUTH_FAILURES[ip] = (count + 1, first_ts)
+
     return Response(
         "Authentication required",
         401,
@@ -254,8 +280,18 @@ def settings_access():
 def settings_env():
     key = request.form.get("key", "").strip()
     value = request.form.get("value", "")
+
     if not key:
         flash("No variable key provided.", "error")
+        return redirect(url_for("admin.settings"))
+
+    valid_keys = {v[0] for v in ALL_ENV_VARS}
+    if key.upper() not in valid_keys:
+        flash(f"Unknown variable '{key}'.", "error")
+        return redirect(url_for("admin.settings"))
+
+    if "\n" in value or "\r" in value:
+        flash("Value must not contain newlines.", "error")
         return redirect(url_for("admin.settings"))
 
     is_sensitive = any(key.upper().endswith(s) for s in SENSITIVE_SUFFIXES)
@@ -305,7 +341,8 @@ def _write_dotenv_key(key: str, value: str) -> None:
     key_upper = key.upper()
 
     val_out = value
-    if " " in val_out or "#" in val_out or '"' in val_out:
+    if " " in val_out or "#" in val_out or '"' in val_out or "'" in val_out or "\n" in val_out or "\r" in val_out:
+        val_out = val_out.replace('"', '\\"')
         val_out = f'"{val_out}"'
 
     with open(DOTENV_PATH, encoding="utf-8") as f:

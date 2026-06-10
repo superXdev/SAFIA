@@ -12,6 +12,10 @@ from services.database import (
 from services.summaries import build_records_summary
 from services.tools._helpers import parse_date
 
+MAX_DESC_LEN = 500
+MAX_CATEGORY_LEN = 100
+
+
 def _build_record_confirm(
     amount: float,
     kind: str,
@@ -40,8 +44,10 @@ def _parse_filters(arguments: dict[str, Any]) -> dict[str, Any]:
 
 async def handle_expense_record(arguments: dict[str, Any], user_id: int) -> str:
     amount = float(arguments.get("amount", 0))
-    description = (arguments.get("description") or "").strip()
-    category = (arguments.get("category") or "").strip()
+    if amount <= 0:
+        return json.dumps({"tool": "expense_record", "error": "amount must be positive"}, ensure_ascii=False)
+    description = (arguments.get("description") or "").strip()[:MAX_DESC_LEN]
+    category = (arguments.get("category") or "").strip()[:MAX_CATEGORY_LEN]
     await save_expense_record(user_id, amount, description, category)
     payload = _build_record_confirm(amount, "expense", category, description)
     return json.dumps({"tool": "expense_record", "data": payload}, ensure_ascii=False)
@@ -49,8 +55,10 @@ async def handle_expense_record(arguments: dict[str, Any], user_id: int) -> str:
 
 async def handle_income_record(arguments: dict[str, Any], user_id: int) -> str:
     amount = float(arguments.get("amount", 0))
-    description = (arguments.get("description") or "").strip()
-    category = (arguments.get("category") or "").strip()
+    if amount <= 0:
+        return json.dumps({"tool": "income_record", "error": "amount must be positive"}, ensure_ascii=False)
+    description = (arguments.get("description") or "").strip()[:MAX_DESC_LEN]
+    category = (arguments.get("category") or "").strip()[:MAX_CATEGORY_LEN]
     await save_income_record(user_id, amount, description, category)
     payload = _build_record_confirm(amount, "income", category, description)
     return json.dumps({"tool": "income_record", "data": payload}, ensure_ascii=False)

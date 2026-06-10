@@ -1,6 +1,7 @@
 """Flask admin dashboard app factory."""
 import logging
 import os
+import secrets
 
 from flask import Flask
 
@@ -9,7 +10,8 @@ from config import EMBEDDING_LOCAL, KB_MAX_UPLOAD_MB
 
 def create_app() -> Flask:
     app = Flask(__name__)
-    app.config["SECRET_KEY"] = os.environ.get("FLASK_SECRET_KEY", "dev-change-me")
+    app.config["SECRET_KEY"] = os.environ.get("FLASK_SECRET_KEY") or secrets.token_urlsafe(32)
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
     app.config["MAX_CONTENT_LENGTH"] = max(1, KB_MAX_UPLOAD_MB) * 1024 * 1024
 
     from admin.routes import bp, init_admin_db

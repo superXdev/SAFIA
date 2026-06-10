@@ -4,13 +4,15 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+from datetime import date, timezone
 from typing import TYPE_CHECKING
 
 from aiogram.enums import ParseMode
 from aiogram.exceptions import TelegramBadRequest
 
-from config import REMINDER_TICK_SECONDS
+from config import REMINDER_MAX_SENDS_PER_DAY, REMINDER_TICK_SECONDS
 from services.llm import polish_reminder_message
+from services.memory_store import aincr
 from services.reminders_db import (
     get_due_reminders,
     increment_reminder_fail_count,
@@ -131,8 +133,16 @@ async def _execute_reminder(reminder: Reminder) -> str | None:
 async def _process_due_reminders(bot: Bot) -> None:
     """Find and execute all due reminders."""
     reminders = await get_due_reminders()
+    today = date.today().isoformat()
     for reminder in reminders:
         try:
+            if REMINDER_MAX_SENDS_PER_DAY > 0:
+                sent_key = f"safia:remind_sent:{reminder.user_id}:{today}"
+                sent_today = await aincr(sent_key, 1, ttl_seconds=86400)
+                if sent_today > REMINDER_MAX_SENDS_PER_DAY:
+                    logging.debug("Reminder %d skipped: user %d daily limit", reminder.id, reminder.user_id)
+                    continue
+
             message = await _execute_reminder(reminder)
             if message:
                 message = await polish_reminder_message(

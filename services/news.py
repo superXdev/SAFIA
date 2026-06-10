@@ -1,7 +1,10 @@
 """Financial news search and summarization service."""
 import asyncio
+import ipaddress
 import logging
 import os
+import socket
+from urllib.parse import urlparse
 
 import httpx
 from openai import AsyncOpenAI
@@ -18,6 +21,19 @@ from config import (
 MAX_PAGE_CHARS = 6000
 
 _groq_client: AsyncOpenAI | None = None
+
+
+def _is_safe_url(url: str) -> bool:
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        return False
+    try:
+        ip = ipaddress.ip_address(socket.gethostbyname(parsed.hostname or ""))
+        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_multicast:
+            return False
+    except Exception:
+        return False
+    return True
 
 
 class _SafeTransport(httpx.AsyncHTTPTransport):
@@ -152,6 +168,8 @@ async def fetch_and_analyze_article(url: str, question: str) -> str:
     """Fetch a single URL and return a summary or extracted info based on the question."""
     if not url.strip():
         return "Empty URL."
+    if not _is_safe_url(url):
+        return "URL is not allowed. Only public http/https URLs are supported."
     if not LLM_CHAT_API_KEY:
         return "Article analysis is not enabled (API Key not set)."
 
