@@ -370,177 +370,6 @@ check_python() {
     fi
 }
 
-# ── Redis check (non-blocking) ──────────────────────────────────────────────
-
-check_redis() {
-    log_info "Checking Redis..."
-
-    if command -v redis-cli >/dev/null 2>&1 && redis-cli ping >/dev/null 2>&1; then
-        log_success "Redis is running"
-        return 0
-    fi
-
-    local redis_installed=false
-
-    if command -v redis-server >/dev/null 2>&1; then
-        redis_installed=true
-    elif [ -x /usr/sbin/redis-server ]; then
-        redis_installed=true
-    elif [ -x /usr/bin/redis-server ]; then
-        redis_installed=true
-    elif [ -x /usr/local/bin/redis-server ]; then
-        redis_installed=true
-    elif [ -x /opt/homebrew/bin/redis-server ]; then
-        redis_installed=true
-    elif command -v systemctl >/dev/null 2>&1; then
-        if systemctl list-unit-files redis.service 2>/dev/null | grep -q redis; then
-            redis_installed=true
-        elif systemctl list-unit-files redis-server.service 2>/dev/null | grep -q redis; then
-            redis_installed=true
-        fi
-    fi
-    if [ "$redis_installed" = false ]; then
-        if command -v rpm >/dev/null 2>&1 && rpm -q redis >/dev/null 2>&1; then
-            redis_installed=true
-        elif command -v dpkg >/dev/null 2>&1 && dpkg -l redis-server >/dev/null 2>&1; then
-            redis_installed=true
-        fi
-    fi
-
-    if [ "$redis_installed" = true ]; then
-        log_info "Redis is installed but not running — starting it..."
-        if command -v systemctl >/dev/null 2>&1; then
-            sudo systemctl start redis 2>/dev/null || \
-            sudo systemctl start redis-server 2>/dev/null || \
-            sudo systemctl start valkey 2>/dev/null || \
-            systemctl start redis 2>/dev/null || \
-            systemctl start redis-server 2>/dev/null || true
-        elif command -v brew >/dev/null 2>&1; then
-            brew services start redis 2>/dev/null || \
-                brew services start valkey 2>/dev/null || true
-        else
-            redis-server --daemonize yes 2>/dev/null || \
-            /usr/sbin/redis-server --daemonize yes 2>/dev/null || \
-            /usr/bin/redis-server --daemonize yes 2>/dev/null || true
-        fi
-        sleep 2
-        if redis-cli ping >/dev/null 2>&1; then
-            log_success "Redis started"
-            return 0
-        fi
-        log_warn "Redis installed but failed to start. Will retry later."
-        return 0
-    fi
-
-    log_info "Redis not found — installing automatically..."
-    case "$OS" in
-        linux)
-            local sudo_cmd=""
-            command -v sudo >/dev/null 2>&1 && sudo_cmd="sudo"
-            case "$DISTRO" in
-                ubuntu|debian|linuxmint|pop|elementary|zorin)
-                    $sudo_cmd apt-get update -qq >/dev/null 2>&1 || true
-                    $sudo_cmd apt-get install -y -qq redis-server >/dev/null 2>&1 || \
-                        $sudo_cmd apt-get install -y -qq valkey >/dev/null 2>&1 || true
-                    ;;
-                fedora|centos|rhel|rocky|almalinux|ol)
-                    $sudo_cmd dnf install -y redis >/dev/null 2>&1 || \
-                        $sudo_cmd yum install -y redis >/dev/null 2>&1 || \
-                        $sudo_cmd dnf install -y valkey >/dev/null 2>&1 || true
-                    ;;
-                arch|manjaro|endeavouros|garuda|artix)
-                    $sudo_cmd pacman -S --noconfirm redis >/dev/null 2>&1 || \
-                        $sudo_cmd pacman -S --noconfirm valkey >/dev/null 2>&1 || true
-                    ;;
-                opensuse-tumbleweed|opensuse-leap|suse|opensuse)
-                    $sudo_cmd zypper install -y redis >/dev/null 2>&1 || \
-                        $sudo_cmd zypper install -y valkey >/dev/null 2>&1 || true
-                    ;;
-                alpine)
-                    $sudo_cmd apk add redis >/dev/null 2>&1 || \
-                        $sudo_cmd apk add valkey >/dev/null 2>&1 || true
-                    ;;
-                gentoo)
-                    $sudo_cmd emerge -q redis >/dev/null 2>&1 || true
-                    ;;
-                void)
-                    $sudo_cmd xbps-install -y redis >/dev/null 2>&1 || true
-                    ;;
-                *)
-                    log_info "Unknown distro — trying common package managers..."
-                    if command -v apt-get >/dev/null 2>&1; then
-                        $sudo_cmd apt-get update -qq >/dev/null 2>&1 || true
-                        $sudo_cmd apt-get install -y -qq redis-server valkey >/dev/null 2>&1 || true
-                    elif command -v dnf >/dev/null 2>&1; then
-                        $sudo_cmd dnf install -y redis valkey >/dev/null 2>&1 || true
-                    elif command -v yum >/dev/null 2>&1; then
-                        $sudo_cmd yum install -y redis >/dev/null 2>&1 || true
-                    elif command -v pacman >/dev/null 2>&1; then
-                        $sudo_cmd pacman -S --noconfirm redis valkey >/dev/null 2>&1 || true
-                    elif command -v zypper >/dev/null 2>&1; then
-                        $sudo_cmd zypper install -y redis valkey >/dev/null 2>&1 || true
-                    elif command -v apk >/dev/null 2>&1; then
-                        $sudo_cmd apk add redis valkey >/dev/null 2>&1 || true
-                    elif command -v emerge >/dev/null 2>&1; then
-                        $sudo_cmd emerge -q redis >/dev/null 2>&1 || true
-                    elif command -v xbps-install >/dev/null 2>&1; then
-                        $sudo_cmd xbps-install -y redis >/dev/null 2>&1 || true
-                    else
-                        log_warn "No supported package manager found."
-                        return 0
-                    fi
-                    ;;
-            esac
-            ;;
-        macos)
-            if command -v brew >/dev/null 2>&1; then
-                brew install redis >/dev/null 2>&1 || \
-                    brew install valkey >/dev/null 2>&1 || true
-            else
-                log_warn "Homebrew not found — cannot auto-install Redis."
-                return 0
-            fi
-            ;;
-    esac
-
-    local redis_bin=""
-    if command -v redis-server >/dev/null 2>&1; then
-        redis_bin="redis-server"
-    elif [ -x /usr/sbin/redis-server ]; then
-        redis_bin="/usr/sbin/redis-server"
-    elif [ -x /usr/bin/redis-server ]; then
-        redis_bin="/usr/bin/redis-server"
-    elif [ -x /opt/homebrew/bin/redis-server ]; then
-        redis_bin="/opt/homebrew/bin/redis-server"
-    fi
-
-    if [ -n "$redis_bin" ]; then
-        log_info "Starting Redis..."
-        if command -v systemctl >/dev/null 2>&1; then
-            sudo systemctl enable --now redis 2>/dev/null || \
-            sudo systemctl enable --now redis-server 2>/dev/null || \
-            sudo systemctl enable --now valkey 2>/dev/null || \
-            systemctl enable --now redis 2>/dev/null || \
-            systemctl enable --now redis-server 2>/dev/null || true
-        elif command -v brew >/dev/null 2>&1; then
-            brew services start redis 2>/dev/null || \
-                brew services start valkey 2>/dev/null || true
-        else
-            "$redis_bin" --daemonize yes 2>/dev/null || true
-        fi
-        sleep 2
-        if redis-cli ping >/dev/null 2>&1; then
-            log_success "Redis installed and running"
-        else
-            log_warn "Redis installed but failed to start. Try: $redis_bin --daemonize yes"
-        fi
-    else
-        log_warn "Could not install Redis automatically."
-        log_info "Install manually or use Docker:"
-        log_info "  docker run -d -p 6379:6379 --name safia-redis redis:7-alpine"
-    fi
-}
-
 # ── Clone / update ──────────────────────────────────────────────────────────
 
 clone_repo() {
@@ -960,7 +789,6 @@ case "${1:-}" in
         rm -f "$HOME/.local/bin/safia"
         rm -rf "$SAFIA_HOME"
         echo "✓ SAFIA has been uninstalled."
-        echo "  Redis/Docker containers (if any) were not touched."
         ;;
     -h|--help|help)
         echo "SAFIA — Asisten Keuangan Pribadi berbasis AI"
@@ -1029,7 +857,6 @@ resolve_install_layout
 check_git
 install_uv
 check_python
-check_redis
 clone_repo
 install_deps
 install_safia_command
@@ -1039,7 +866,7 @@ echo -e "${GREEN}${BOLD}══════════════════�
 echo -e "${GREEN}${BOLD}  SAFIA installed successfully!${NC}"
 echo ""
 echo -e "  Next steps:"
-echo -e "    ${BOLD}1. safia setup${NC}    Configure .env (API keys, token, DB, Redis)"
+echo -e "    ${BOLD}1. safia setup${NC}    Configure .env (API keys, token, database)"
 echo -e "    ${BOLD}2. safia start${NC}    Start the bot + admin dashboard as daemons"
 echo ""
 echo -e "  Runs locally — no cloud dependencies:"

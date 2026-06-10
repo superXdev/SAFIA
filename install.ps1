@@ -108,21 +108,6 @@ try {
     }
 }
 
-# Redis
-try {
-    $redisCheck = (redis-cli ping 2>&1 | Out-String).Trim()
-    if ($redisCheck -eq "PONG") {
-        Write-OK "redis: running"
-    } else {
-        Write-Warn "Redis not running. redis-cli returned: $redisCheck"
-        Write-Warn "Install from https://redis.io/download/ or use WSL."
-        Write-Warn "Bot will fail at startup without Redis."
-    }
-} catch {
-    Write-Warn "Redis not found. Install from https://redis.io/download/ or use WSL."
-    Write-Warn "Bot will fail at startup without Redis."
-}
-
 # ── Clone repository ────────────────────────────────────────────────────────
 Write-Step "Cloning SAFIA repository..."
 if (Test-Path $InstallDir) {
