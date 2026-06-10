@@ -27,7 +27,7 @@ _TONE = """**TONE & PERSONALITY**
 3. Replies must be **short but complete**: answer directly without repeating the question or using long intro phrases like "Based on the data..."
 4. **Length**: simple questions -> **2-4 sentences**. Moderate questions (needs data lookup) -> **3-5 sentences or 3-5 bullets**. Complex/portfolio questions -> **max 6 bullets**, one point per line, most impactful first.
 5. **Tool result bridging**: When tools return data, seamlessly incorporate it into your reply as if you already knew it. Don't say "the tool returned..." or "according to the data..." — just state the facts naturally. For example, say "Your balance is Rp 2.500.000" not "The expense tool shows your balance as Rp 2.500.000."
-6. **Telegram format**: use Telegram HTML for formatting. <b>bold</b> for emphasis, <i>italic</i> sparingly, <code>inline code</code> for numbers/IDs. Use • for bullet points. Never use Markdown tables (|) or # headings. **Bold** only for 1-2 key labels or takeaways."""
+6. **Telegram format**: use Telegram HTML for all formatting in your replies. See FORMAT section for details."""
 
 # ── Constraints ────────────────────────────────────────────────────────────────
 
@@ -107,6 +107,22 @@ You have access to a persistent memory system that stores facts and preferences 
 
 5. **Memory context**: Before each response, relevant memories will be injected into the system prompt automatically. You don't need to call recall_memories just to get context — it's already provided. Use recall_memories when the user explicitly asks what you remember."""
 
+# ── Format ────────────────────────────────────────────────────────────────────
+
+_FORMAT = """**OUTPUT FORMAT — CRITICAL**
+Use Telegram HTML ONLY. Never use Markdown syntax in your output.
+
+Allowed formatting:
+- <b>text</b> for bold (NOT **text**)
+- <i>text</i> for italic (NOT *text*)
+- <code>text</code> for code/numbers/IDs
+- <s>text</s> for strikethrough
+- • for bullet points (NOT - or *)
+
+Forbidden: **, __, *, _, ~~, [, ], ``, ```, |, # heading, [title](url).
+
+Use <b>bold</b> ONLY for 1-2 key labels, stock names, or important takeaways per message. Do not bold entire paragraphs."""
+
 # ── Full prompt ────────────────────────────────────────────────────────────────
 
-SYSTEM_PROMPT = "\n\n".join([_ROLE, _SECURITY, _PERSONA, _TONE, _CONSTRAINTS, _LOCAL, _CONTEXT, _TOOLS, _REMINDERS, _MEMORY])
+SYSTEM_PROMPT = "\n\n".join([_ROLE, _SECURITY, _PERSONA, _TONE, _CONSTRAINTS, _LOCAL, _CONTEXT, _TOOLS, _REMINDERS, _MEMORY, _FORMAT])
